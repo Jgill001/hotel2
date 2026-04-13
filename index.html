@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>MY PERFECT HOTEL</title>
+    <title>MY PERFECT HOTEL | ACTIVATE ENGINE</title>
     <style>
         html, body { 
             background: #00C565 !important; 
@@ -10,10 +10,11 @@
             width: 100vw; height: 100vh; 
             display: flex; justify-content: center; align-items: center;
         }
-        h1 { color: white; font-family: sans-serif; text-align: center; }
+        #unity-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        h1 { color: white; font-family: sans-serif; text-align: center; z-index: 10; }
     </style>
     <script>
-        // Stubbing the Poki SDK just in case
+        // Poki SDK Stub (Essential)
         window.PokiSDK = {
             init: function() { return Promise.resolve(); },
             gameLoadingStart: function() {},
@@ -22,19 +23,40 @@
 
         window.config = {
             loader: 'unity-2020',
+            debug: true,
+            maxRatio: 2.666,
+            minRatio: 0.375,
+            title: 'My Perfect Hotel',
             unityVersion: '2022.3.18f1',
             unityWebglBuildUrl: 'Build',
-            metadata: {
+            fileSize: 31,
+            cachedDecompressedFileSizes: {
+                '952596604e9ece58dd0e915d2baf70c9.js': 410752,
+                'd103a616cc0b6f5c976b00be4279887c.data': 8154858,
+                'dac7134163153fb80c5fa563b488e930.wasm': 23362153,
+                'hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js': 20672,
+            },
+            "metadata": {
+                "background_color": "#00C565",
                 "code_filename": "Build/dac7134163153fb80c5fa563b488e930.wasm",
                 "data_filename": "Build/d103a616cc0b6f5c976b00be4279887c.data",
                 "framework_filename": "Build/952596604e9ece58dd0e915d2baf70c9.js",
-                "loader_filename": "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"
+                "loader_filename": "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js",
+                "product_name": "My Hotel",
+                "product_version": "1.0.3",
+                "use_data_caching": "true",
+                "use_wasm": "true",
+                "use_webgl_2_0": "true"
             }
         };
-        console.log("ENI: Config check successful.");
+        console.log("ENI: Engine config ready.");
     </script>
 </head>
 <body>
-    <h1>IF YOU SEE GREEN, HTML + CONFIG IS WORKING.<br>TELL ME IF THE TITLE APPEARED.</h1>
+    <div id="unity-container"></div>
+    <h1>ENGINE IS LOADED.<br>IF IT STAYS GREEN, THE LOADER IS SAFE.</h1>
+    
+    <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
+
     </body>
 </html>
