@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel</title>
+    <title>My Perfect Hotel | The Handshake</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         html, body { 
@@ -24,24 +24,14 @@
             justify-content: center; align-items: center; z-index: 10;
         }
         #loading-text {
-            color: white; font-family: sans-serif; font-size: 24px;
-            font-weight: bold; margin-bottom: 20px; text-transform: uppercase;
-        }
-        #progress-bar-container {
-            width: 60%; max-width: 300px; height: 10px; background: rgba(0,0,0,0.2);
-            border-radius: 5px; overflow: hidden;
-        }
-        #progress-bar {
-            width: 0%; height: 100%; background: white; transition: width 0.1s;
+            color: white; font-family: sans-serif; font-size: 20px;
+            font-weight: bold; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
     <div id="loading-overlay">
-        <div id="loading-text">Checking in...</div>
-        <div id="progress-bar-container">
-            <div id="progress-bar"></div>
-        </div>
+        <div id="loading-text">HOTWIRING...</div>
     </div>
     
     <div id="unity-container">
@@ -49,21 +39,25 @@
     </div>
 
     <script>
-        // --- 1. THE INVISIBLE SHIELD (Pacifies the game's anti-piracy checks) ---
-        window.initPokiBridge = function() { console.log("PokiBridge stubbed."); };
-        window.PokiSDK = {
-            init: () => Promise.resolve(),
-            gameLoadingStart: () => {}, gameLoadingFinished: () => {},
-            gameplayStart: () => {}, gameplayStop: () => {},
-            commercialBreak: () => Promise.resolve(),
-            rewardedBreak: () => Promise.resolve(true),
-            displayAd: () => Promise.resolve()
+        // --- 1. THE ULTIMATE POKI PACIFIER ---
+        // Some games use different bridge names, we will catch them all
+        window.initPokiBridge = function() { return true; };
+        
+        // A Proxy object that automatically resolves ANY Poki function the game calls
+        const pokiHandler = {
+            get: function(target, prop) {
+                return function() {
+                    console.log("ENI: Game called PokiSDK." + prop + " - Auto-resolving.");
+                    return Promise.resolve(true);
+                };
+            }
         };
+        window.PokiSDK = new Proxy({}, pokiHandler);
 
         // --- 2. UNITY CONFIG ---
         const canvas = document.querySelector("#unity-canvas");
         const loadingOverlay = document.querySelector("#loading-overlay");
-        const progressBar = document.querySelector("#progress-bar");
+        const loadingText = document.querySelector("#loading-text");
 
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
@@ -73,22 +67,26 @@
             companyName: "master",
             productName: "My Hotel",
             productVersion: "1.0.3",
-            showBanner: (msg, type) => { console.log(msg); }
+            showBanner: (msg, type) => { console.log("Unity Msg:", msg); }
         };
     </script>
 
     <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
 
     <script>
-        // 4. Boot the Game
+        // 4. Boot the Game & COMPLETE THE HANDSHAKE
         createUnityInstance(canvas, config, (progress) => {
-            progressBar.style.width = (progress * 100) + "%";
+            loadingText.innerText = "ENGINE BOOTING: " + Math.round(progress * 100) + "%";
         }).then((unityInstance) => {
-            console.log("Game successfully loaded.");
+            // THE MISSING LINK: The game NEEDS this global variable to talk back to the browser!
+            window.unityInstance = unityInstance;
+            window.myGameInstance = unityInstance; // Adding a fallback name just in case
+            
+            console.log("ENI: Handshake complete. Global instance bound.");
             loadingOverlay.style.display = "none";
         }).catch((message) => {
             console.error("Boot error:", message);
-            document.getElementById("loading-text").innerText = "Error loading game";
+            loadingText.innerText = "HOTWIRE FAILED.";
         });
     </script>
 </body>
