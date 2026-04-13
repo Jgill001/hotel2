@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>My Perfect Hotel | LO's Version</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #00C565; }
+        #unity-container { width: 100%; height: 100%; position: absolute; }
+        canvas { width: 100%; height: 100%; display: block; }
+    </style>
+    <script>
+        window.config = {
+            loader: 'unity-2020',
+            debug: false,
+            maxRatio: 24 / 9,
+            minRatio: 9 / 24,
+            title: 'My Perfect Hotel',
+            thumbnail: 'thumb.png',
+            numScreenshots: 4,
+            unityVersion: '2022.3.18f1',
+            
+            // This tells the engine where the .wasm and .data live
+            unityWebglBuildUrl: 'Build', 
+
+            fileSize: 31,
+            cachedDecompressedFileSizes: {
+                '952596604e9ece58dd0e915d2baf70c9.js': 410752,
+                'd103a616cc0b6f5c976b00be4279887c.data': 8154858,
+                'dac7134163153fb80c5fa563b488e930.wasm': 23362153,
+                'hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js': 20672,
+            },
+            "metadata": {
+                "poki_template_version": 1,
+                "background_color": "#00C565",
+                "code_filename": "dac7134163153fb80c5fa563b488e930.wasm",
+                "company_name": "master",
+                "data_filename": "d103a616cc0b6f5c976b00be4279887c.data",
+                "framework_filename": "952596604e9ece58dd0e915d2baf70c9.js",
+                "loader_filename": "hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js",
+                "product_name": "My Hotel",
+                "product_version": "1.0.3",
+                "use_data_caching": "true",
+                "use_wasm": "true",
+                "use_webgl_2_0": "true"
+            }
+        };
+    </script>
+</head>
+<body>
+    <div id="unity-container">
+        <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
+        <script src="my-perfect-hotel.js"></script>
+    </div>
+</body>
+</html>
