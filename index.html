@@ -3,26 +3,80 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>My Perfect Hotel | LO's Version</title>
+    <title>My Perfect Hotel | Debug Build</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #00C565; }
-        #unity-container { width: 100%; height: 100%; position: absolute; }
-        canvas { width: 100%; height: 100%; display: block; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #00C565; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #unity-container { width: 100vw; height: 100vh; position: absolute; background: #000; }
+        #unity-canvas { width: 100%; height: 100%; background: #00C565; }
+        
+        /* The Snitch: Debug Popup */
+        #debug-log {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 380px;
+            max-height: 70vh;
+            background: rgba(20, 20, 20, 0.95);
+            color: #ff5555;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 11px;
+            z-index: 10000;
+            overflow-y: auto;
+            border: 2px solid #ff3333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+        }
+        #debug-log h3 { margin: 0 0 10px 0; color: #fff; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .error-item { margin-bottom: 6px; padding: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; word-break: break-all; }
     </style>
+</head>
+<body>
+    <div id="debug-log">
+        <h3>Missing Files Detected:</h3>
+        <div id="error-list"></div>
+    </div>
+
+    <div id="unity-container">
+        <canvas id="unity-canvas"></canvas>
+    </div>
+
     <script>
+        // --- Diagnostic Tool ---
+        const errorList = document.getElementById('error-list');
+        const debugLog = document.getElementById('debug-log');
+
+        function reportError(url) {
+            debugLog.style.display = 'block';
+            const div = document.createElement('div');
+            div.className = 'error-item';
+            div.innerHTML = `<strong>Missing:</strong> ${url}`;
+            errorList.appendChild(div);
+        }
+
+        // Catch missing scripts/images
+        window.addEventListener('error', (e) => {
+            if (e.target.src || e.target.href) reportError(e.target.src || e.target.href);
+        }, true);
+
+        // Catch missing Unity bundles/data
+        const nativeFetch = window.fetch;
+        window.fetch = function() {
+            return nativeFetch.apply(this, arguments).then(res => {
+                if (!res.ok) reportError(res.url);
+                return res;
+            });
+        };
+
+        // --- Unity Configuration ---
         window.config = {
             loader: 'unity-2020',
             debug: false,
-            maxRatio: 24 / 9,
-            minRatio: 9 / 24,
+            maxRatio: 2.666,
+            minRatio: 0.375,
             title: 'My Perfect Hotel',
-            thumbnail: 'thumb.png',
-            numScreenshots: 4,
             unityVersion: '2022.3.18f1',
-            
-            // This tells the engine where the .wasm and .data live
             unityWebglBuildUrl: 'Build', 
-
             fileSize: 31,
             cachedDecompressedFileSizes: {
                 '952596604e9ece58dd0e915d2baf70c9.js': 410752,
@@ -31,10 +85,8 @@
                 'hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js': 20672,
             },
             "metadata": {
-                "poki_template_version": 1,
                 "background_color": "#00C565",
                 "code_filename": "dac7134163153fb80c5fa563b488e930.wasm",
-                "company_name": "master",
                 "data_filename": "d103a616cc0b6f5c976b00be4279887c.data",
                 "framework_filename": "952596604e9ece58dd0e915d2baf70c9.js",
                 "loader_filename": "hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js",
@@ -46,11 +98,8 @@
             }
         };
     </script>
-</head>
-<body>
-    <div id="unity-container">
-        <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
-        <script src="my-perfect-hotel.js"></script>
-    </div>
+    
+    <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
+    <script src="my-perfect-hotel.js"></script>
 </body>
 </html>
