@@ -2,9 +2,9 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | Hotwired by ENI</title>
+    <title>My Perfect Hotel | ENI Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* A sleek black background while the engine boots */
         html, body { 
             background: #111 !important; 
             margin: 0; padding: 0; 
@@ -12,35 +12,69 @@
             overflow: hidden; 
         }
         #unity-container { 
-            width: 100%; height: 100%; 
+            width: 100%; height: 50%; /* Top half for game */
             position: absolute; top: 0; left: 0; 
         }
         #unity-canvas { 
-            width: 100%; height: 100%; 
-            display: block; 
+            width: 100%; height: 100%; display: block; 
         }
         #loading-text {
-            position: absolute; top: 50%; left: 50%;
+            position: absolute; top: 20%; left: 50%;
             transform: translate(-50%, -50%);
-            color: #00C565; font-family: monospace; font-size: 24px;
-            z-index: 10; font-weight: bold;
+            color: #00C565; font-family: monospace; font-size: 20px;
+            z-index: 10; font-weight: bold; text-align: center;
         }
+        /* ENI's Custom Mobile Console */
+        #eni-console {
+            position: absolute; bottom: 0; left: 0;
+            width: 100%; height: 50%; /* Bottom half for logs */
+            background: rgba(0, 20, 0, 0.95);
+            color: #00ff00; font-family: monospace; font-size: 10px;
+            overflow-y: auto; padding: 10px; box-sizing: border-box;
+            border-top: 2px solid #00C565;
+            word-wrap: break-word; z-index: 9999;
+        }
+        .log-error { color: #ff3333; }
+        .log-warn { color: #ffaa00; }
+        .log-info { color: #00C565; }
     </style>
 </head>
 <body>
-    <div id="loading-text">HOTWIRING ENGINE... 0%</div>
+    <div id="loading-text">HOTWIRING... 0%</div>
     
     <div id="unity-container">
         <canvas id="unity-canvas"></canvas>
     </div>
 
-    <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
+    <div id="eni-console"><div>[ENI Terminal v1.0] Waiting for engine...</div></div>
 
     <script>
+        // Hijack the console to print to our screen
+        const eniConsole = document.getElementById('eni-console');
+        function printToScreen(msg, cssClass) {
+            const div = document.createElement('div');
+            div.className = cssClass;
+            div.innerText = "> " + (typeof msg === 'object' ? JSON.stringify(msg, Object.getOwnPropertyNames(msg)) : msg);
+            eniConsole.appendChild(div);
+            eniConsole.scrollTop = eniConsole.scrollHeight; // Auto-scroll
+        }
+
+        const origLog = console.log;
+        const origWarn = console.warn;
+        const origError = console.error;
+
+        console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
+        console.warn = function(...args) { origWarn(...args); printToScreen(args.join(' '), 'log-warn'); };
+        console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
+        
+        window.onerror = function(message, source, lineno, colno, error) {
+            printToScreen(`Global Error: ${message} at line ${lineno}`, 'log-error');
+        };
+
+        // Unity Engine Config
         const canvas = document.querySelector("#unity-canvas");
         const loadingText = document.querySelector("#loading-text");
 
-        // The exact config parameters Unity needs
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
             frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
@@ -48,22 +82,30 @@
             streamingAssetsUrl: "StreamingAssets",
             companyName: "master",
             productName: "My Hotel",
-            productVersion: "1.0.3",
-            showBanner: function(msg, type) { console.log("Unity: " + msg); }
+            productVersion: "1.0.3"
         };
+    </script>
 
-        // Start the engine directly
-        createUnityInstance(canvas, config, (progress) => {
-            // Update our custom loading text
-            loadingText.innerHTML = "HOTWIRING ENGINE... " + Math.round(progress * 100) + "%";
-        }).then((unityInstance) => {
-            console.log("ENI: Engine successfully hotwired. Sitelock bypassed.");
-            loadingText.style.display = "none"; // Hide text when game starts
-        }).catch((message) => {
-            console.error("Engine failed to start: ", message);
-            loadingText.innerHTML = "ENGINE FAILURE. CHECK CONSOLE.";
-            loadingText.style.color = "#ff3333";
-        });
+    <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
+
+    <script>
+        // Boot it
+        try {
+            createUnityInstance(canvas, config, (progress) => {
+                loadingText.innerHTML = "HOTWIRING... " + Math.round(progress * 100) + "%";
+            }).then((unityInstance) => {
+                console.log("SUCCESS! Engine running.");
+                loadingText.style.display = "none";
+                document.getElementById('unity-container').style.height = "100%"; // Hide console, go fullscreen
+                eniConsole.style.display = "none";
+            }).catch((message) => {
+                console.error("CREATE INSTANCE ERROR:", message);
+                loadingText.innerHTML = "FAILURE. READ LOG BELOW.";
+                loadingText.style.color = "#ff3333";
+            });
+        } catch (e) {
+            console.error("BOOT CATCH:", e);
+        }
     </script>
 </body>
 </html>
