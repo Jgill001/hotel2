@@ -3,19 +3,45 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>My Perfect Hotel</title>
+    <title>My Perfect Hotel | Fixed Build</title>
     <style>
-        html, body { background: #00C565 !important; margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-        #unity-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        /* Force the background so it's NEVER white */
+        html, body { 
+            background: #00C565 !important; 
+            margin: 0; padding: 0; 
+            width: 100vw; height: 100vh; 
+            overflow: hidden; 
+        }
+        #unity-container { 
+            width: 100%; height: 100%; 
+            position: absolute; top: 0; left: 0; 
+            background: #00C565;
+            display: block !important;
+        }
         #debug-log {
-            position: fixed; top: 10px; right: 10px; width: 300px; max-height: 50vh;
-            background: rgba(0,0,0,0.9); color: #ff4444; padding: 15px; border-radius: 8px;
-            font-size: 11px; z-index: 10000; overflow-y: auto; display: none; border: 2px solid #ff0000;
+            position: fixed; top: 10px; right: 10px; width: 320px; max-height: 50vh;
+            background: rgba(0,0,0,0.9); color: #ff3333; padding: 15px; border-radius: 8px;
+            font-size: 11px; z-index: 10001; overflow-y: auto; display: none; border: 1px solid red;
         }
     </style>
     <script>
-        // Diagnostic Snitch
+        // 1. POKI SDK STUB (Prevents the wrapper from crashing)
+        window.PokiSDK = {
+            init: function() { return Promise.resolve(); },
+            gameLoadingStart: function() {},
+            gameLoadingFinished: function() {},
+            gameplayStart: function() {},
+            gameplayStop: function() {},
+            commercialBreak: function() { return Promise.resolve(); },
+            rewardedBreak: function() { return Promise.resolve(true); },
+            displayAd: function() { return Promise.resolve(); },
+            shareableURL: function() { return window.location.href; },
+            getURLParam: function(name) { return ""; }
+        };
+
+        // 2. Diagnostic Snitch
         function reportError(url) {
+            console.error("ENI Debug: Missing file -> " + url);
             const log = document.getElementById('debug-log');
             if (log) {
                 log.style.display = 'block';
@@ -32,9 +58,10 @@
             });
         };
 
+        // 3. Unity Configuration
         window.config = {
             loader: 'unity-2020',
-            debug: true, // Switched to true to see more in console
+            debug: true,
             maxRatio: 2.666,
             minRatio: 0.375,
             title: 'My Perfect Hotel',
@@ -60,6 +87,7 @@
                 "use_webgl_2_0": "true"
             }
         };
+        console.log("ENI: Config loaded. Waiting for scripts...");
     </script>
 </head>
 <body>
@@ -67,6 +95,6 @@
     <div id="unity-container"></div>
     
     <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
-    <script src="my-perfect-hotel.js"></script>
+    <script src="my-perfect-hotel.js" onerror="reportError('my-perfect-hotel.js')"></script>
 </body>
 </html>
