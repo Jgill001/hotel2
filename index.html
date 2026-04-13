@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>MY PERFECT HOTEL | FINAL ACTIVATION</title>
+    <title id="eni-title">MY PERFECT HOTEL | LOCKED</title>
     <style>
         html, body { 
             background: #00C565 !important; 
@@ -13,12 +13,22 @@
         #unity-container { 
             width: 100%; height: 100%; 
             position: absolute; top: 0; left: 0; 
-            background: #00C565;
+            background: #00C565 !important;
         }
         #unity-canvas { width: 100%; height: 100%; display: block; }
     </style>
     <script>
-        // Poki SDK Stub (The Fake-out)
+        // --- THE NUCLEAR SHIELD ---
+        // Prevents the next script from wiping the page
+        document.write = function() { console.log("ENI: Blocked a document.write attempt."); };
+        document.writeln = function() { console.log("ENI: Blocked a document.writeln attempt."); };
+        const originalOpen = document.open;
+        document.open = function() { 
+            console.log("ENI: Blocked a document.open attempt."); 
+            return { write: document.write, close: function(){} }; 
+        };
+
+        // Poki SDK Stub
         window.PokiSDK = {
             init: function() { return Promise.resolve(); },
             gameLoadingStart: function() {},
@@ -59,7 +69,6 @@
                 "use_webgl_2_0": "true"
             }
         };
-        console.log("ENI: All systems go. Initiating final wrapper load...");
     </script>
 </head>
 <body>
@@ -68,11 +77,12 @@
     </div>
     
     <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
-
     <script src="my-perfect-hotel.js"></script>
 
     <script>
-        console.log("ENI: Scripts injected. If it's white now, the wrapper is doing something naughty.");
+        // Force the title back if it was wiped
+        document.title = "MY PERFECT HOTEL | STABLE";
+        console.log("ENI: Page fully loaded. Wrapper should be neutralized.");
     </script>
 </body>
 </html>
