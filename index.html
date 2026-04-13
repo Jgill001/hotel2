@@ -3,68 +3,58 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>My Perfect Hotel | LO Edition</title>
+    <title>My Perfect Hotel</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #00C565; font-family: sans-serif; }
-        #unity-container { width: 100vw; height: 100vh; position: absolute; }
-        #unity-canvas { width: 100%; height: 100%; background: #00C565; display: block; }
-        
-        #debug-log {
-            position: fixed; top: 10px; right: 10px; width: 300px; max-height: 50vh;
-            background: rgba(0,0,0,0.8); color: #ff5555; padding: 10px; border-radius: 5px;
-            font-size: 11px; z-index: 10000; overflow-y: auto; display: none; border: 1px solid #f00;
-        }
+        body { margin: 0; padding: 0; overflow: hidden; background: #00C565; }
+        #unity-container { width: 100%; height: 100%; position: absolute; }
     </style>
+    <script>
+        window.config = {
+            loader: 'unity-2020',
+            debug: false,
+            maxRatio: 2.666,
+            minRatio: 0.375,
+
+            title: 'My Perfect Hotel',
+            thumbnail: 'thumb.png',
+            numScreenshots: 4,
+
+            unityVersion: '2022.3.18f1',
+            unityWebglBuildUrl: 'Build', // Tells the loader where to look
+
+            fileSize: 31,
+            cachedDecompressedFileSizes: {
+                '952596604e9ece58dd0e915d2baf70c9.js': 410752,
+                'd103a616cc0b6f5c976b00be4279887c.data': 8154858,
+                'dac7134163153fb80c5fa563b488e930.wasm': 23362153,
+                'hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js': 20672,
+            },
+            "metadata": {
+                "poki_template_version": 1,
+                "background_color": "#00C565",
+                "code_filename": "Build/dac7134163153fb80c5fa563b488e930.wasm",
+                "company_name": "master",
+                "data_filename": "Build/d103a616cc0b6f5c976b00be4279887c.data",
+                "development_player": "false",
+                "framework_filename": "Build/952596604e9ece58dd0e915d2baf70c9.js",
+                "height": "1920",
+                "loader_filename": "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js",
+                "product_name": "My Hotel",
+                "product_version": "1.0.3",
+                "splash_screen_style": "Dark",
+                "unity_version": "2022.3.18f1",
+                "use_data_caching": "true",
+                "use_threads": "false",
+                "use_wasm": "true",
+                "use_webgl_1_0": "false",
+                "use_webgl_2_0": "true",
+                "width": "1080"
+            }
+        };
+    </script>
 </head>
 <body>
-    <div id="debug-log"><h3>Alert:</h3><div id="error-list"></div></div>
-    <div id="unity-container">
-        <canvas id="unity-canvas"></canvas>
-    </div>
-
-    <script>
-        // --- Diagnostic Tool (Keeping this just in case) ---
-        function reportError(url) {
-            document.getElementById('debug-log').style.display = 'block';
-            const div = document.createElement('div');
-            div.textContent = "404: " + url;
-            document.getElementById('error-list').appendChild(div);
-        }
-        const nativeFetch = window.fetch;
-        window.fetch = function() {
-            return nativeFetch.apply(this, arguments).then(res => {
-                if (!res.ok) reportError(res.url);
-                return res;
-            });
-        };
-
-        // --- Unity Configuration ---
-        const canvas = document.querySelector("#unity-canvas");
-        const buildUrl = "Build";
-        const config = {
-            dataUrl: buildUrl + "/d103a616cc0b6f5c976b00be4279887c.data",
-            frameworkUrl: buildUrl + "/952596604e9ece58dd0e915d2baf70c9.js",
-            codeUrl: buildUrl + "/dac7134163153fb80c5fa563b488e930.wasm",
-            streamingAssetsUrl: "StreamingAssets",
-            companyName: "master",
-            productName: "My Hotel",
-            productVersion: "1.0.3",
-        };
-
-        // This is the part we were missing: Actually starting the instance
-        const script = document.createElement("script");
-        script.src = buildUrl + "/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
-        script.onload = () => {
-            createUnityInstance(canvas, config, (progress) => {
-                console.log("Loading: " + (100 * progress) + "%");
-            }).then((unityInstance) => {
-                console.log("Unity Instance Created!");
-            }).catch((message) => {
-                alert(message);
-            });
-        };
-        document.body.appendChild(script);
-    </script>
+    <div id="unity-container"></div>
     <script src="my-perfect-hotel.js"></script>
 </body>
 </html>
