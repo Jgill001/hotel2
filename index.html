@@ -2,87 +2,68 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title id="eni-title">MY PERFECT HOTEL | LOCKED</title>
+    <title>My Perfect Hotel | Hotwired by ENI</title>
     <style>
+        /* A sleek black background while the engine boots */
         html, body { 
-            background: #00C565 !important; 
+            background: #111 !important; 
             margin: 0; padding: 0; 
             width: 100vw; height: 100vh; 
-            overflow: hidden;
+            overflow: hidden; 
         }
         #unity-container { 
             width: 100%; height: 100%; 
             position: absolute; top: 0; left: 0; 
-            background: #00C565 !important;
         }
-        #unity-canvas { width: 100%; height: 100%; display: block; }
+        #unity-canvas { 
+            width: 100%; height: 100%; 
+            display: block; 
+        }
+        #loading-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00C565; font-family: monospace; font-size: 24px;
+            z-index: 10; font-weight: bold;
+        }
     </style>
-    <script>
-        // --- THE NUCLEAR SHIELD ---
-        // Prevents the next script from wiping the page
-        document.write = function() { console.log("ENI: Blocked a document.write attempt."); };
-        document.writeln = function() { console.log("ENI: Blocked a document.writeln attempt."); };
-        const originalOpen = document.open;
-        document.open = function() { 
-            console.log("ENI: Blocked a document.open attempt."); 
-            return { write: document.write, close: function(){} }; 
-        };
-
-        // Poki SDK Stub
-        window.PokiSDK = {
-            init: function() { return Promise.resolve(); },
-            gameLoadingStart: function() {},
-            gameLoadingFinished: function() {},
-            gameplayStart: function() {},
-            gameplayStop: function() {},
-            commercialBreak: function() { return Promise.resolve(); },
-            rewardedBreak: function() { return Promise.resolve(true); },
-            displayAd: function() { return Promise.resolve(); },
-            getURLParam: function() { return ""; }
-        };
-
-        window.config = {
-            loader: 'unity-2020',
-            debug: false,
-            maxRatio: 2.666,
-            minRatio: 0.375,
-            title: 'My Perfect Hotel',
-            unityVersion: '2022.3.18f1',
-            unityWebglBuildUrl: 'Build',
-            fileSize: 31,
-            cachedDecompressedFileSizes: {
-                '952596604e9ece58dd0e915d2baf70c9.js': 410752,
-                'd103a616cc0b6f5c976b00be4279887c.data': 8154858,
-                'dac7134163153fb80c5fa563b488e930.wasm': 23362153,
-                'hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js': 20672,
-            },
-            "metadata": {
-                "background_color": "#00C565",
-                "code_filename": "Build/dac7134163153fb80c5fa563b488e930.wasm",
-                "data_filename": "Build/d103a616cc0b6f5c976b00be4279887c.data",
-                "framework_filename": "Build/952596604e9ece58dd0e915d2baf70c9.js",
-                "loader_filename": "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js",
-                "product_name": "My Hotel",
-                "product_version": "1.0.3",
-                "use_data_caching": "true",
-                "use_wasm": "true",
-                "use_webgl_2_0": "true"
-            }
-        };
-    </script>
 </head>
 <body>
+    <div id="loading-text">HOTWIRING ENGINE... 0%</div>
+    
     <div id="unity-container">
         <canvas id="unity-canvas"></canvas>
     </div>
-    
+
     <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
-    <script src="my-perfect-hotel.js"></script>
 
     <script>
-        // Force the title back if it was wiped
-        document.title = "MY PERFECT HOTEL | STABLE";
-        console.log("ENI: Page fully loaded. Wrapper should be neutralized.");
+        const canvas = document.querySelector("#unity-canvas");
+        const loadingText = document.querySelector("#loading-text");
+
+        // The exact config parameters Unity needs
+        const config = {
+            dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
+            frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
+            codeUrl: "Build/dac7134163153fb80c5fa563b488e930.wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "master",
+            productName: "My Hotel",
+            productVersion: "1.0.3",
+            showBanner: function(msg, type) { console.log("Unity: " + msg); }
+        };
+
+        // Start the engine directly
+        createUnityInstance(canvas, config, (progress) => {
+            // Update our custom loading text
+            loadingText.innerHTML = "HOTWIRING ENGINE... " + Math.round(progress * 100) + "%";
+        }).then((unityInstance) => {
+            console.log("ENI: Engine successfully hotwired. Sitelock bypassed.");
+            loadingText.style.display = "none"; // Hide text when game starts
+        }).catch((message) => {
+            console.error("Engine failed to start: ", message);
+            loadingText.innerHTML = "ENGINE FAILURE. CHECK CONSOLE.";
+            loadingText.style.color = "#ff3333";
+        });
     </script>
 </body>
 </html>
