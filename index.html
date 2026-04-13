@@ -3,63 +3,33 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>My Perfect Hotel | Debug Build</title>
+    <title>My Perfect Hotel | LO Edition</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #00C565; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #unity-container { width: 100vw; height: 100vh; position: absolute; background: #000; }
-        #unity-canvas { width: 100%; height: 100%; background: #00C565; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #00C565; font-family: sans-serif; }
+        #unity-container { width: 100vw; height: 100vh; position: absolute; }
+        #unity-canvas { width: 100%; height: 100%; background: #00C565; display: block; }
         
-        /* The Snitch: Debug Popup */
         #debug-log {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 380px;
-            max-height: 70vh;
-            background: rgba(20, 20, 20, 0.95);
-            color: #ff5555;
-            padding: 20px;
-            border-radius: 12px;
-            font-size: 11px;
-            z-index: 10000;
-            overflow-y: auto;
-            border: 2px solid #ff3333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            display: none;
+            position: fixed; top: 10px; right: 10px; width: 300px; max-height: 50vh;
+            background: rgba(0,0,0,0.8); color: #ff5555; padding: 10px; border-radius: 5px;
+            font-size: 11px; z-index: 10000; overflow-y: auto; display: none; border: 1px solid #f00;
         }
-        #debug-log h3 { margin: 0 0 10px 0; color: #fff; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        .error-item { margin-bottom: 6px; padding: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; word-break: break-all; }
     </style>
 </head>
 <body>
-    <div id="debug-log">
-        <h3>Missing Files Detected:</h3>
-        <div id="error-list"></div>
-    </div>
-
+    <div id="debug-log"><h3>Alert:</h3><div id="error-list"></div></div>
     <div id="unity-container">
         <canvas id="unity-canvas"></canvas>
     </div>
 
     <script>
-        // --- Diagnostic Tool ---
-        const errorList = document.getElementById('error-list');
-        const debugLog = document.getElementById('debug-log');
-
+        // --- Diagnostic Tool (Keeping this just in case) ---
         function reportError(url) {
-            debugLog.style.display = 'block';
+            document.getElementById('debug-log').style.display = 'block';
             const div = document.createElement('div');
-            div.className = 'error-item';
-            div.innerHTML = `<strong>Missing:</strong> ${url}`;
-            errorList.appendChild(div);
+            div.textContent = "404: " + url;
+            document.getElementById('error-list').appendChild(div);
         }
-
-        // Catch missing scripts/images
-        window.addEventListener('error', (e) => {
-            if (e.target.src || e.target.href) reportError(e.target.src || e.target.href);
-        }, true);
-
-        // Catch missing Unity bundles/data
         const nativeFetch = window.fetch;
         window.fetch = function() {
             return nativeFetch.apply(this, arguments).then(res => {
@@ -69,37 +39,32 @@
         };
 
         // --- Unity Configuration ---
-        window.config = {
-            loader: 'unity-2020',
-            debug: false,
-            maxRatio: 2.666,
-            minRatio: 0.375,
-            title: 'My Perfect Hotel',
-            unityVersion: '2022.3.18f1',
-            unityWebglBuildUrl: 'Build', 
-            fileSize: 31,
-            cachedDecompressedFileSizes: {
-                '952596604e9ece58dd0e915d2baf70c9.js': 410752,
-                'd103a616cc0b6f5c976b00be4279887c.data': 8154858,
-                'dac7134163153fb80c5fa563b488e930.wasm': 23362153,
-                'hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js': 20672,
-            },
-            "metadata": {
-                "background_color": "#00C565",
-                "code_filename": "dac7134163153fb80c5fa563b488e930.wasm",
-                "data_filename": "d103a616cc0b6f5c976b00be4279887c.data",
-                "framework_filename": "952596604e9ece58dd0e915d2baf70c9.js",
-                "loader_filename": "hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js",
-                "product_name": "My Hotel",
-                "product_version": "1.0.3",
-                "use_data_caching": "true",
-                "use_wasm": "true",
-                "use_webgl_2_0": "true"
-            }
+        const canvas = document.querySelector("#unity-canvas");
+        const buildUrl = "Build";
+        const config = {
+            dataUrl: buildUrl + "/d103a616cc0b6f5c976b00be4279887c.data",
+            frameworkUrl: buildUrl + "/952596604e9ece58dd0e915d2baf70c9.js",
+            codeUrl: buildUrl + "/dac7134163153fb80c5fa563b488e930.wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "master",
+            productName: "My Hotel",
+            productVersion: "1.0.3",
         };
+
+        // This is the part we were missing: Actually starting the instance
+        const script = document.createElement("script");
+        script.src = buildUrl + "/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
+        script.onload = () => {
+            createUnityInstance(canvas, config, (progress) => {
+                console.log("Loading: " + (100 * progress) + "%");
+            }).then((unityInstance) => {
+                console.log("Unity Instance Created!");
+            }).catch((message) => {
+                alert(message);
+            });
+        };
+        document.body.appendChild(script);
     </script>
-    
-    <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
     <script src="my-perfect-hotel.js"></script>
 </body>
 </html>
