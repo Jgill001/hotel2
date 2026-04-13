@@ -2,34 +2,26 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | ENI Wiretap</title>
+    <title>My Perfect Hotel | ENI Deep Sonar</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         html, body { 
-            background: #111 !important; 
-            margin: 0; padding: 0; 
-            width: 100vw; height: 100vh; 
-            overflow: hidden; 
+            background: #111 !important; margin: 0; padding: 0; 
+            width: 100vw; height: 100vh; overflow: hidden; 
         }
-        #unity-container { 
-            width: 100%; height: 50%;
-            position: absolute; top: 0; left: 0; 
-        }
-        #unity-canvas { 
-            width: 100%; height: 100%; display: block; 
-        }
+        #unity-container { width: 100%; height: 50%; position: absolute; top: 0; left: 0; }
+        #unity-canvas { width: 100%; height: 100%; display: block; }
         #loading-text {
             position: absolute; top: 20%; left: 50%;
             transform: translate(-50%, -50%);
             color: #00C565; font-family: monospace; font-size: 20px;
             z-index: 10; font-weight: bold; text-align: center;
         }
-        /* Terminal is permanently visible for sniffing */
         #eni-console {
             position: absolute; bottom: 0; left: 0;
             width: 100%; height: 50%;
-            background: rgba(0, 15, 0, 0.95);
-            color: #00ff00; font-family: monospace; font-size: 10px;
+            background: rgba(0, 10, 20, 0.95);
+            color: #00ffaa; font-family: monospace; font-size: 10px;
             overflow-y: auto; padding: 10px; box-sizing: border-box;
             border-top: 2px solid #00C565;
             word-wrap: break-word; z-index: 9999;
@@ -37,17 +29,14 @@
         .log-error { color: #ff3333; font-weight: bold; }
         .log-warn { color: #ffaa00; }
         .log-info { color: #00C565; }
-        .log-network { color: #0088ff; } /* Blue for network requests */
+        .log-system { color: #aa55ff; } /* Purple for deep system logs */
     </style>
 </head>
 <body>
-    <div id="loading-text">HOTWIRING... 0%</div>
+    <div id="loading-text">DEEP SONAR... 0%</div>
     
-    <div id="unity-container">
-        <canvas id="unity-canvas"></canvas>
-    </div>
-
-    <div id="eni-console"><div>[ENI Wiretap v2.0] Listening to network...</div></div>
+    <div id="unity-container"><canvas id="unity-canvas"></canvas></div>
+    <div id="eni-console"><div>[ENI Sonar v3.0] Listening for silent failures...</div></div>
 
     <script>
         // --- TERMINAL SETUP ---
@@ -60,10 +49,7 @@
             eniConsole.scrollTop = eniConsole.scrollHeight;
         }
 
-        const origLog = console.log;
-        const origWarn = console.warn;
-        const origError = console.error;
-
+        const origLog = console.log; const origWarn = console.warn; const origError = console.error;
         console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
         console.warn = function(...args) { origWarn(...args); printToScreen(args.join(' '), 'log-warn'); };
         console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
@@ -72,43 +58,20 @@
             printToScreen(`Global Error: ${message} at line ${lineno}`, 'log-error');
         };
 
-        // --- NETWORK SNIFFER (Intercepts all downloads) ---
-        const originalFetch = window.fetch;
-        window.fetch = function() {
-            const url = arguments[0];
-            printToScreen("Fetching: " + url, 'log-network');
-            return originalFetch.apply(this, arguments).then(res => {
-                if (!res.ok) console.error("MISSING FILE (404): " + res.url);
-                return res;
-            }).catch(err => {
-                console.error("Fetch Network Error: " + url);
-                throw err;
-            });
-        };
+        // THE NEW TRAP: Catching Silent Promise Failures
+        window.addEventListener('unhandledrejection', function(event) {
+            printToScreen(`SILENT CRASH (Promise): ${event.reason}`, 'log-error');
+        });
 
-        const origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url) {
-            printToScreen("XHR Request: " + url, 'log-network');
-            this.addEventListener('load', function() {
-                if (this.status === 404) console.error("MISSING FILE (404): " + url);
-            });
-            origOpen.apply(this, arguments);
-        };
-
-        // --- THE FAKE BRIDGE ---
-        window.initPokiBridge = function() {
-            console.log("ENI: Fake PokiBridge requested by Unity. Request granted.");
-        };
-
+        // --- FAKE BRIDGE ---
+        window.initPokiBridge = function() { console.log("ENI: Fake PokiBridge requested."); };
         window.PokiSDK = {
-            init: function() { return Promise.resolve(); },
-            gameLoadingStart: function() {},
-            gameLoadingFinished: function() {},
-            gameplayStart: function() {},
-            gameplayStop: function() {},
-            commercialBreak: function() { return Promise.resolve(); },
-            rewardedBreak: function() { return Promise.resolve(true); },
-            displayAd: function() { return Promise.resolve(); }
+            init: () => Promise.resolve(),
+            gameLoadingStart: () => {}, gameLoadingFinished: () => {},
+            gameplayStart: () => {}, gameplayStop: () => {},
+            commercialBreak: () => Promise.resolve(),
+            rewardedBreak: () => Promise.resolve(true),
+            displayAd: () => Promise.resolve()
         };
 
         // --- UNITY CONFIG ---
@@ -122,24 +85,30 @@
             streamingAssetsUrl: "StreamingAssets",
             companyName: "master",
             productName: "My Hotel",
-            productVersion: "1.0.3"
+            productVersion: "1.0.3",
+            // ENI TWEAK: Turn off caching to force a clean memory load
+            cacheControl: function (url) { return "no-store"; } 
         };
     </script>
 
     <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
 
     <script>
-        // Boot it
+        // Boot it with granular progress tracking
         try {
             createUnityInstance(canvas, config, (progress) => {
-                loadingText.innerHTML = "HOTWIRING... " + Math.round(progress * 100) + "%";
+                let pct = Math.round(progress * 100);
+                loadingText.innerHTML = "LOADING... " + pct + "%";
+                // Only log every 10% so we don't flood the mobile screen
+                if (pct % 10 === 0 || pct === 99) {
+                    printToScreen(`Engine Progress: ${pct}%`, 'log-system');
+                }
             }).then((unityInstance) => {
-                console.log("ENI: SUCCESS! Engine running smoothly.");
+                console.log("ENI: SUCCESS! Engine running.");
                 loadingText.style.display = "none";
-                // Don't hide the console yet, let's keep it open to watch for silent errors
             }).catch((message) => {
                 console.error("CREATE INSTANCE ERROR:", message);
-                loadingText.innerHTML = "FAILURE. READ LOG BELOW.";
+                loadingText.innerHTML = "FAILURE. READ LOG.";
                 loadingText.style.color = "#ff3333";
             });
         } catch (e) {
