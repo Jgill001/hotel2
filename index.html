@@ -2,69 +2,55 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | ENI Deep Sonar</title>
+    <title>My Perfect Hotel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         html, body { 
-            background: #111 !important; margin: 0; padding: 0; 
-            width: 100vw; height: 100vh; overflow: hidden; 
+            background: #00C565 !important; 
+            margin: 0; padding: 0; 
+            width: 100vw; height: 100vh; 
+            overflow: hidden; 
         }
-        #unity-container { width: 100%; height: 50%; position: absolute; top: 0; left: 0; }
-        #unity-canvas { width: 100%; height: 100%; display: block; }
+        #unity-container { 
+            width: 100%; height: 100%; 
+            position: absolute; top: 0; left: 0; 
+        }
+        #unity-canvas { 
+            width: 100%; height: 100%; display: block; 
+        }
+        #loading-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #00C565; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10;
+        }
         #loading-text {
-            position: absolute; top: 20%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: #00C565; font-family: monospace; font-size: 20px;
-            z-index: 10; font-weight: bold; text-align: center;
+            color: white; font-family: sans-serif; font-size: 24px;
+            font-weight: bold; margin-bottom: 20px; text-transform: uppercase;
         }
-        #eni-console {
-            position: absolute; bottom: 0; left: 0;
-            width: 100%; height: 50%;
-            background: rgba(0, 10, 20, 0.95);
-            color: #00ffaa; font-family: monospace; font-size: 10px;
-            overflow-y: auto; padding: 10px; box-sizing: border-box;
-            border-top: 2px solid #00C565;
-            word-wrap: break-word; z-index: 9999;
+        #progress-bar-container {
+            width: 60%; max-width: 300px; height: 10px; background: rgba(0,0,0,0.2);
+            border-radius: 5px; overflow: hidden;
         }
-        .log-error { color: #ff3333; font-weight: bold; }
-        .log-warn { color: #ffaa00; }
-        .log-info { color: #00C565; }
-        .log-system { color: #aa55ff; } /* Purple for deep system logs */
+        #progress-bar {
+            width: 0%; height: 100%; background: white; transition: width 0.1s;
+        }
     </style>
 </head>
 <body>
-    <div id="loading-text">DEEP SONAR... 0%</div>
+    <div id="loading-overlay">
+        <div id="loading-text">Checking in...</div>
+        <div id="progress-bar-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
     
-    <div id="unity-container"><canvas id="unity-canvas"></canvas></div>
-    <div id="eni-console"><div>[ENI Sonar v3.0] Listening for silent failures...</div></div>
+    <div id="unity-container">
+        <canvas id="unity-canvas"></canvas>
+    </div>
 
     <script>
-        // --- TERMINAL SETUP ---
-        const eniConsole = document.getElementById('eni-console');
-        function printToScreen(msg, cssClass) {
-            const div = document.createElement('div');
-            div.className = cssClass;
-            div.innerText = "> " + (typeof msg === 'object' ? JSON.stringify(msg) : msg);
-            eniConsole.appendChild(div);
-            eniConsole.scrollTop = eniConsole.scrollHeight;
-        }
-
-        const origLog = console.log; const origWarn = console.warn; const origError = console.error;
-        console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
-        console.warn = function(...args) { origWarn(...args); printToScreen(args.join(' '), 'log-warn'); };
-        console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
-        
-        window.onerror = function(message, source, lineno) {
-            printToScreen(`Global Error: ${message} at line ${lineno}`, 'log-error');
-        };
-
-        // THE NEW TRAP: Catching Silent Promise Failures
-        window.addEventListener('unhandledrejection', function(event) {
-            printToScreen(`SILENT CRASH (Promise): ${event.reason}`, 'log-error');
-        });
-
-        // --- FAKE BRIDGE ---
-        window.initPokiBridge = function() { console.log("ENI: Fake PokiBridge requested."); };
+        // --- 1. THE INVISIBLE SHIELD (Pacifies the game's anti-piracy checks) ---
+        window.initPokiBridge = function() { console.log("PokiBridge stubbed."); };
         window.PokiSDK = {
             init: () => Promise.resolve(),
             gameLoadingStart: () => {}, gameLoadingFinished: () => {},
@@ -74,9 +60,10 @@
             displayAd: () => Promise.resolve()
         };
 
-        // --- UNITY CONFIG ---
+        // --- 2. UNITY CONFIG ---
         const canvas = document.querySelector("#unity-canvas");
-        const loadingText = document.querySelector("#loading-text");
+        const loadingOverlay = document.querySelector("#loading-overlay");
+        const progressBar = document.querySelector("#progress-bar");
 
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
@@ -86,34 +73,23 @@
             companyName: "master",
             productName: "My Hotel",
             productVersion: "1.0.3",
-            // ENI TWEAK: Turn off caching to force a clean memory load
-            cacheControl: function (url) { return "no-store"; } 
+            showBanner: (msg, type) => { console.log(msg); }
         };
     </script>
 
     <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
 
     <script>
-        // Boot it with granular progress tracking
-        try {
-            createUnityInstance(canvas, config, (progress) => {
-                let pct = Math.round(progress * 100);
-                loadingText.innerHTML = "LOADING... " + pct + "%";
-                // Only log every 10% so we don't flood the mobile screen
-                if (pct % 10 === 0 || pct === 99) {
-                    printToScreen(`Engine Progress: ${pct}%`, 'log-system');
-                }
-            }).then((unityInstance) => {
-                console.log("ENI: SUCCESS! Engine running.");
-                loadingText.style.display = "none";
-            }).catch((message) => {
-                console.error("CREATE INSTANCE ERROR:", message);
-                loadingText.innerHTML = "FAILURE. READ LOG.";
-                loadingText.style.color = "#ff3333";
-            });
-        } catch (e) {
-            console.error("BOOT CATCH:", e);
-        }
+        // 4. Boot the Game
+        createUnityInstance(canvas, config, (progress) => {
+            progressBar.style.width = (progress * 100) + "%";
+        }).then((unityInstance) => {
+            console.log("Game successfully loaded.");
+            loadingOverlay.style.display = "none";
+        }).catch((message) => {
+            console.error("Boot error:", message);
+            document.getElementById("loading-text").innerText = "Error loading game";
+        });
     </script>
 </body>
 </html>
