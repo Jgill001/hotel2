@@ -2,105 +2,96 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | Defibrillator</title>
+    <title>My Perfect Hotel | The Master Key</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        html, body { 
-            background: #111 !important; margin: 0; padding: 0; 
-            width: 100vw; height: 100vh; overflow: hidden; 
-        }
-        #unity-container { 
-            width: 100%; height: 50%; position: absolute; top: 0; left: 0; background: #000;
-        }
+        html, body { background: #00C565 !important; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
+        #unity-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: #00C565; }
         #unity-canvas { width: 100%; height: 100%; display: block; }
         
         #eni-console {
-            position: absolute; bottom: 0; left: 0;
-            width: 100%; height: 50%;
-            background: rgba(0, 10, 20, 0.98);
-            color: #00ffaa; font-family: monospace; font-size: 11px;
-            overflow-y: auto; padding: 10px; box-sizing: border-box;
-            border-top: 3px solid #00C565;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 35%;
+            background: rgba(0, 10, 20, 0.98); color: #00ffaa; font-family: monospace; font-size: 11px;
+            overflow-y: auto; padding: 10px; box-sizing: border-box; border-top: 3px solid #00C565;
             word-wrap: break-word; z-index: 9999;
         }
         .log-error { color: #ff3333; font-weight: bold; }
         .log-info { color: #aaa; }
-        .log-network { color: #00ccff; }
         .log-poki { color: #ff00ff; font-weight: bold; }
-
-        /* The Defibrillator Overlay */
-        #wake-up-button {
-            position: absolute; top: 0; left: 0; width: 100%; height: 50%;
-            background: rgba(0, 197, 101, 0.8); color: white;
-            display: flex; justify-content: center; align-items: center;
-            font-family: sans-serif; font-size: 24px; font-weight: bold;
-            text-align: center; z-index: 10000; cursor: pointer;
-            animation: pulse 2s infinite; text-transform: uppercase;
+        
+        #wake-button {
+            position: absolute; top: 0; left: 0; width: 100%; height: 65%;
+            background: rgba(0, 197, 101, 0.95); color: white; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; font-family: sans-serif; font-size: 22px; 
+            font-weight: bold; text-align: center; z-index: 10000; cursor: pointer;
         }
-        @keyframes pulse { 0% { background: rgba(0, 197, 101, 0.8); } 50% { background: rgba(0, 150, 80, 0.9); } 100% { background: rgba(0, 197, 101, 0.8); } }
+        .subtitle { font-size: 14px; font-weight: normal; margin-top: 10px; color: #ccffcc;}
     </style>
 </head>
 <body>
     <div id="unity-container"><canvas id="unity-canvas"></canvas></div>
-    
-    <div id="wake-up-button" onclick="wakeUpEngine()">TAP TO UNLOCK ENGINE</div>
 
-    <div id="eni-console"><div>[ENI Defibrillator v6.0] Awaiting vitals...</div></div>
+    <div id="wake-button" onclick="kickstartEngine()">
+        <div>ENGINE LOADED</div>
+        <div class="subtitle">TAP TO INJECT THE MASTER KEY</div>
+    </div>
+
+    <div id="eni-console"><div>[ENI Master Key v7.0] Ready to breach...</div></div>
 
     <script>
-        // --- 1. TERMINAL SETUP ---
         const eniConsole = document.getElementById('eni-console');
         function printToScreen(msg, cssClass) {
-            const div = document.createElement('div');
-            div.className = cssClass;
-            div.innerText = "> " + (typeof msg === 'object' ? JSON.stringify(msg) : msg);
-            eniConsole.appendChild(div);
-            eniConsole.scrollTop = eniConsole.scrollHeight;
+            const div = document.createElement('div'); div.className = cssClass;
+            div.innerText = "> " + msg; eniConsole.appendChild(div); eniConsole.scrollTop = eniConsole.scrollHeight;
         }
-
         const origLog = console.log; const origError = console.error;
         console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
         console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
         window.onerror = function(msg, src, lineno) { printToScreen(`CRASH: ${msg} @ line ${lineno}`, 'log-error'); };
 
-        // --- 2. THE WAKE UP ROUTINE ---
-        function wakeUpEngine() {
-            document.getElementById('wake-up-button').style.display = 'none';
-            printToScreen("PHYSICAL TAP DETECTED. Audio Context Unlocked.", "log-poki");
-            // If the game is processing shaders, this tap might queue until the CPU is free
-            printToScreen("WARNING: If it is still frozen, it is compiling shaders. WAIT 60 SECONDS.", "log-error");
+        // --- THE MASTER KEY POKI SDK ---
+        // We are abandoning the Proxy and using an explicit object. Some games check typeof!
+        window.PokiSDK = {
+            init: function() { printToScreen("Game asked for Poki Init. Approving...", "log-poki"); return Promise.resolve(); },
+            gameLoadingStart: function() { printToScreen("Poki: Loading Start", "log-poki"); },
+            gameLoadingFinished: function() { printToScreen("Poki: Loading Finished!", "log-poki"); },
+            gameplayStart: function() { printToScreen("Poki: Gameplay Start!", "log-poki"); },
+            gameplayStop: function() { printToScreen("Poki: Gameplay Stop", "log-poki"); },
+            commercialBreak: function() { printToScreen("Poki: Ad Blocked. Resuming...", "log-poki"); return Promise.resolve(); },
+            rewardedBreak: function() { printToScreen("Poki: Rewarded Ad Blocked. Giving reward...", "log-poki"); return Promise.resolve(true); },
+            displayAd: function() { printToScreen("Poki: Display Ad Blocked.", "log-poki"); return Promise.resolve(); },
+            getURLParam: function() { return ""; }
+        };
+        
+        // Some games demand the bridge returns the SDK object itself!
+        window.initPokiBridge = function() { 
+            printToScreen("INIT POKI BRIDGE CALLED. Handing over Master Key.", "log-poki"); 
+            return window.PokiSDK; 
+        };
+
+        // --- THE KICKSTART ROUTINE ---
+        let globalUnityInstance = null;
+        function kickstartEngine() {
+            document.getElementById('wake-button').style.display = 'none';
+            printToScreen("PHYSICAL TAP: Commencing brute-force handshake...", "log-poki");
+            
+            if (globalUnityInstance) {
+                try {
+                    // Forcefully telling the Unity GameObjects that we are ready
+                    printToScreen("Injecting SDK Ready messages...", "log-poki");
+                    globalUnityInstance.SendMessage("PokiUnitySDK", "OnPokiInit");
+                    globalUnityInstance.SendMessage("PokiUnitySDK", "Ready");
+                    globalUnityInstance.SendMessage("PokiUnitySDK", "PokiInit");
+                    globalUnityInstance.SendMessage("GameManager", "StartGame");
+                    printToScreen("Messages sent! If the screen is green, the UI should drop momentarily.", "log-poki");
+                } catch(e) {
+                    printToScreen("Kickstart error: (This is normal if the object doesn't exist) " + e.message, "log-error");
+                }
+            } else {
+                printToScreen("Unity Instance not bound yet! Wait a second.", "log-error");
+            }
         }
 
-        // --- 3. POKI BRIDGE (Callback Catcher) ---
-        window.initPokiBridge = function(...args) { 
-            printToScreen("INIT POKI BRIDGE CALLED", "log-poki"); 
-            // If they passed a secret callback function, execute it!
-            if (args.length > 0 && typeof args[0] === 'function') {
-                printToScreen("Executing hidden Poki callback!", "log-poki");
-                args[0]();
-            }
-            return { success: true }; 
-        };
-        const pokiHandler = {
-            get: function(target, prop) {
-                return function(...args) {
-                    printToScreen(`GAME CALLED POKI: PokiSDK.${prop}()`, 'log-poki');
-                    return Promise.resolve(true); 
-                };
-            }
-        };
-        window.PokiSDK = new Proxy({}, pokiHandler);
-
-        // --- 4. NETWORK WIRETAP (Silent Mode) ---
-        const originalFetch = window.fetch;
-        window.fetch = function(url) {
-            if (url.includes('.bundle') || url.includes('.json') || url.includes('.hash')) {
-                printToScreen(`Fetching Asset: ${url.split('/').pop()}`, 'log-network');
-            }
-            return originalFetch.apply(this, arguments);
-        };
-
-        // --- 5. UNITY CONFIG ---
         const canvas = document.querySelector("#unity-canvas");
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
@@ -112,19 +103,18 @@
             productVersion: "1.0.3"
         };
     </script>
-
     <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
-
     <script>
-        printToScreen("Starting Unity Loader...", "log-info");
+        printToScreen("Booting engine...", "log-info");
         createUnityInstance(canvas, config, (progress) => {
             let pct = Math.round(progress * 100);
-            if (pct % 20 === 0 || pct >= 95) printToScreen(`Engine Download: ${pct}%`, 'log-info');
+            if (pct === 100) printToScreen("Engine Base Loaded.", 'log-info');
         }).then((unityInstance) => {
+            globalUnityInstance = unityInstance;
             window.unityInstance = unityInstance;
-            printToScreen("ENGINE BOOT COMPLETE. Waiting for Game Logic...", "log-info");
+            printToScreen("ENGINE BOUND. Waiting for bundles to unpack... TAP THE GREEN BUTTON.", "log-info");
         }).catch((message) => {
-            printToScreen(`FATAL BOOT ERROR: ${message}`, 'log-error');
+            printToScreen(`FATAL ERROR: ${message}`, 'log-error');
         });
     </script>
 </body>
