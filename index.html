@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | X-Ray</title>
+    <title>My Perfect Hotel | X-Ray & Antidote</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body, html { background: #111 !important; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
@@ -15,13 +15,15 @@
             word-wrap: break-word; z-index: 9999;
         }
         .log-error { color: #ff3333; font-weight: bold; }
+        .log-warn { color: #ffaa00; font-weight: bold; }
         .log-info { color: #aaa; }
-        .log-xray { color: #ff00ff; font-weight: bold; background: #330033; padding: 2px; }
+        .log-network { color: #00ccff; }
+        .log-xray { color: #ff00ff; font-weight: bold; background: #330033; padding: 2px; margin-top: 2px; }
     </style>
 </head>
 <body>
     <div id="game-view"><canvas id="unity-canvas"></canvas></div>
-    <div id="eni-console"><div>[ENI X-Ray v9.0] Watching the DOM for hidden injections...</div></div>
+    <div id="eni-console"><div>[ENI X-Ray v10.0] Antidote Active. Watching DOM and Network...</div></div>
 
     <script>
         // --- 1. TERMINAL SETUP ---
@@ -34,9 +36,9 @@
         const origLog = console.log; const origError = console.error;
         console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
         console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
+        window.onerror = function(msg, src, lineno) { printToScreen(`CRASH: ${msg} @ line ${lineno}`, 'log-error'); };
 
-        // --- 2. THE X-RAY (MutationObserver) ---
-        // This is the ultimate trap. It watches the actual HTML for spawned elements.
+        // --- 2. DOM X-RAY (MutationObserver) ---
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
@@ -51,7 +53,58 @@
         });
         observer.observe(document.documentElement, { childList: true, subtree: true });
 
-        // --- 3. UNITY CONFIG ---
+        // --- 3. THE ANTIDOTE (Network Overrides) ---
+        const origOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url) {
+            this._targetUrl = url;
+            if (url.includes('.bundle') || url.includes('.json') || url.includes('.hash')) {
+                printToScreen(`XHR Req: ${url.split('/').pop()}`, 'log-network');
+            }
+            origOpen.apply(this, arguments);
+        };
+        
+        const origSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function() {
+            this.addEventListener('readystatechange', function() {
+                if (this.readyState === 4 && this.status === 404 && (this._targetUrl.includes('.json') || this._targetUrl.includes('.hash'))) {
+                    printToScreen(`[ANTIDOTE] Blocked GitHub HTML Poison for: ${this._targetUrl.split('/').pop()}`, "log-warn");
+                    try { Object.defineProperty(this, 'responseText', { value: '' }); } catch(e){}
+                    try { Object.defineProperty(this, 'response', { value: '' }); } catch(e){}
+                }
+            });
+            origSend.apply(this, arguments);
+        };
+
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const url = args[0];
+            if (typeof url === 'string' && (url.includes('.bundle') || url.includes('.json') || url.includes('.hash'))) {
+                printToScreen(`Fetch Req: ${url.split('/').pop()}`, 'log-network');
+            }
+            const response = await originalFetch.apply(this, args);
+            if (!response.ok && typeof url === 'string' && (url.includes('.json') || url.includes('.hash'))) {
+                printToScreen(`[ANTIDOTE] Blocked Fetch Poison for: ${url.split('/').pop()}`, "log-warn");
+                return new Response("", { status: 404, statusText: "Not Found" });
+            }
+            return response;
+        };
+
+        // --- 4. THE RESTORED POKI PACIFIER ---
+        window.pokiIsReady = true;
+        window.isPokiReady = true;
+        window.PokiSDK = {
+            init: () => Promise.resolve(),
+            gameLoadingStart: () => {}, gameLoadingFinished: () => {},
+            gameplayStart: () => {}, gameplayStop: () => {},
+            commercialBreak: () => Promise.resolve(), rewardedBreak: () => Promise.resolve(true),
+            displayAd: () => Promise.resolve(), getURLParam: () => ""
+        };
+        window.initPokiBridge = () => {
+            printToScreen("Poki Bridge Initialized Successfully", "log-info");
+            return window.PokiSDK;
+        };
+
+        // --- 5. UNITY CONFIG & BOOT ---
         const canvas = document.querySelector("#unity-canvas");
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
@@ -64,16 +117,18 @@
         const script = document.createElement("script");
         script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
         script.onload = () => {
+            printToScreen("Loader loaded, building Unity Instance...", "log-info");
             createUnityInstance(canvas, config, (progress) => {
-                if (Math.round(progress * 100) % 20 === 0) printToScreen(`Engine: ${Math.round(progress * 100)}%`, 'log-info');
+                let pct = Math.round(progress * 100);
+                if (pct % 20 === 0) printToScreen(`Engine Download: ${pct}%`, 'log-info');
             }).then((unityInstance) => {
                 window.unityInstance = unityInstance;
-                printToScreen("ENGINE BOOT COMPLETE. Waiting for game to stall...", "log-info");
+                printToScreen("ENGINE BOOT COMPLETE.", "log-info");
             }).catch((err) => {
-                printToScreen(`BOOT ERROR: ${err}`, 'log-error');
+                printToScreen(`FATAL ERROR: ${err}`, 'log-error');
             });
         };
-        document.body.appendChild(script);
+        document.head.appendChild(script);
     </script>
 </body>
 </html>
