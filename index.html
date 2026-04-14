@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | X-Ray & Antidote</title>
+    <title>My Perfect Hotel | The Breach</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body, html { background: #111 !important; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
@@ -18,12 +18,22 @@
         .log-warn { color: #ffaa00; font-weight: bold; }
         .log-info { color: #aaa; }
         .log-network { color: #00ccff; }
-        .log-xray { color: #ff00ff; font-weight: bold; background: #330033; padding: 2px; margin-top: 2px; }
+        .log-poki { color: #ff00ff; font-weight: bold; background: #330033; padding: 2px; }
+        
+        #breach-btn {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            background: red; color: white; font-weight: bold; padding: 15px 30px;
+            font-size: 18px; border: 2px solid white; cursor: pointer; z-index: 10000;
+            display: none; border-radius: 10px; text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
-    <div id="game-view"><canvas id="unity-canvas"></canvas></div>
-    <div id="eni-console"><div>[ENI X-Ray v10.0] Antidote Active. Watching DOM and Network...</div></div>
+    <div id="game-view">
+        <canvas id="unity-canvas"></canvas>
+        <button id="breach-btn" onclick="fireBreach()">KICKSTART C# ENGINE</button>
+    </div>
+    <div id="eni-console"><div>[ENI Breach Protocol] Waiting for the stall...</div></div>
 
     <script>
         // --- 1. TERMINAL SETUP ---
@@ -38,22 +48,7 @@
         console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
         window.onerror = function(msg, src, lineno) { printToScreen(`CRASH: ${msg} @ line ${lineno}`, 'log-error'); };
 
-        // --- 2. DOM X-RAY (MutationObserver) ---
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.tagName === 'SCRIPT') {
-                        printToScreen(`!!! CAUGHT SCRIPT INJECTION: ${node.src || 'inline script'} !!!`, "log-xray");
-                    }
-                    if (node.tagName === 'IFRAME') {
-                        printToScreen(`!!! CAUGHT IFRAME INJECTION: ${node.src} !!!`, "log-xray");
-                    }
-                });
-            });
-        });
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-
-        // --- 3. THE ANTIDOTE (Network Overrides) ---
+        // --- 2. THE ANTIDOTE ---
         const origOpen = XMLHttpRequest.prototype.open;
         XMLHttpRequest.prototype.open = function(method, url) {
             this._targetUrl = url;
@@ -78,9 +73,6 @@
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
             const url = args[0];
-            if (typeof url === 'string' && (url.includes('.bundle') || url.includes('.json') || url.includes('.hash'))) {
-                printToScreen(`Fetch Req: ${url.split('/').pop()}`, 'log-network');
-            }
             const response = await originalFetch.apply(this, args);
             if (!response.ok && typeof url === 'string' && (url.includes('.json') || url.includes('.hash'))) {
                 printToScreen(`[ANTIDOTE] Blocked Fetch Poison for: ${url.split('/').pop()}`, "log-warn");
@@ -89,20 +81,36 @@
             return response;
         };
 
-        // --- 4. THE RESTORED POKI PACIFIER ---
+        // --- 3. VERBOSE POKI TRACKER ---
         window.pokiIsReady = true;
         window.isPokiReady = true;
         window.PokiSDK = {
-            init: () => Promise.resolve(),
-            gameLoadingStart: () => {}, gameLoadingFinished: () => {},
-            gameplayStart: () => {}, gameplayStop: () => {},
-            commercialBreak: () => Promise.resolve(), rewardedBreak: () => Promise.resolve(true),
-            displayAd: () => Promise.resolve(), getURLParam: () => ""
+            init: () => { printToScreen("[POKI] Game requested init()", "log-poki"); return Promise.resolve(); },
+            gameLoadingStart: () => { printToScreen("[POKI] gameLoadingStart()", "log-poki"); },
+            gameLoadingFinished: () => { printToScreen("[POKI] gameLoadingFinished()", "log-poki"); },
+            gameplayStart: () => { printToScreen("[POKI] gameplayStart()", "log-poki"); },
+            gameplayStop: () => { printToScreen("[POKI] gameplayStop()", "log-poki"); },
+            commercialBreak: () => { printToScreen("[POKI] commercialBreak()", "log-poki"); return Promise.resolve(false); },
+            rewardedBreak: () => { printToScreen("[POKI] rewardedBreak()", "log-poki"); return Promise.resolve(true); },
+            displayAd: () => { printToScreen("[POKI] displayAd()", "log-poki"); return Promise.resolve(); },
+            getURLParam: (param) => { printToScreen(`[POKI] getURLParam(${param})`, "log-poki"); return ""; }
         };
         window.initPokiBridge = () => {
-            printToScreen("Poki Bridge Initialized Successfully", "log-info");
+            printToScreen("[POKI] Bridge Successfully Initialized", "log-poki");
             return window.PokiSDK;
         };
+
+        // --- 4. THE BREACH FUNCTION ---
+        function fireBreach() {
+            printToScreen("!!! FIRING MANUAL BREACH COMMANDS !!!", "log-warn");
+            document.getElementById('breach-btn').style.display = 'none';
+            if (window.unityInstance) {
+                try { window.unityInstance.SendMessage("PokiUnitySDK", "Ready"); printToScreen("Sent: PokiUnitySDK -> Ready", "log-warn"); } catch(e) {}
+                try { window.unityInstance.SendMessage("PokiUnitySDK", "OnPokiInit"); printToScreen("Sent: PokiUnitySDK -> OnPokiInit", "log-warn"); } catch(e) {}
+                try { window.unityInstance.SendMessage("PokiUnitySDK", "pokiInit"); printToScreen("Sent: PokiUnitySDK -> pokiInit", "log-warn"); } catch(e) {}
+                try { window.unityInstance.SendMessage("GameManager", "StartGame"); printToScreen("Sent: GameManager -> StartGame", "log-warn"); } catch(e) {}
+            }
+        }
 
         // --- 5. UNITY CONFIG & BOOT ---
         const canvas = document.querySelector("#unity-canvas");
@@ -117,13 +125,14 @@
         const script = document.createElement("script");
         script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
         script.onload = () => {
-            printToScreen("Loader loaded, building Unity Instance...", "log-info");
             createUnityInstance(canvas, config, (progress) => {
-                let pct = Math.round(progress * 100);
-                if (pct % 20 === 0) printToScreen(`Engine Download: ${pct}%`, 'log-info');
+                // Do nothing with progress so we don't spam the log
             }).then((unityInstance) => {
                 window.unityInstance = unityInstance;
-                printToScreen("ENGINE BOOT COMPLETE.", "log-info");
+                printToScreen("ENGINE BOOT COMPLETE. Waiting 5 seconds, then exposing Breach Button...", "log-info");
+                
+                // Show the kickstart button shortly after boot
+                setTimeout(() => { document.getElementById('breach-btn').style.display = 'block'; }, 5000);
             }).catch((err) => {
                 printToScreen(`FATAL ERROR: ${err}`, 'log-error');
             });
