@@ -6,60 +6,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body, html { 
-            background: #00C565 !important; margin: 0; padding: 0; 
-            width: 100vw; height: 100vh; overflow: hidden; 
-            /* Prevent double-tap zoom on mobile */
-            touch-action: none; 
+            background: #00C565; margin: 0; padding: 0; 
+            width: 100vw; height: 100vh; overflow: hidden; touch-action: none; 
         }
-        #unity-container { 
-            width: 100%; height: 100%; position: absolute; top: 0; left: 0; 
-        }
-        #unity-canvas { 
-            width: 100%; height: 100%; display: block; 
-        }
-        
+        #unity-canvas { width: 100%; height: 100%; display: block; }
         #simple-loader { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: #00C565; display: flex; justify-content: center; align-items: center; 
-            color: white; font-family: sans-serif; font-size: 24px; font-weight: bold;
-            z-index: 10; pointer-events: none; /* Let clicks pass through just in case! */
+            color: white; font-family: sans-serif; font-size: 24px; font-weight: bold; z-index: 10; 
         }
     </style>
 </head>
 <body>
-    <div id="unity-container">
-        <canvas id="unity-canvas"></canvas>
-    </div>
-    
+    <canvas id="unity-canvas"></canvas>
     <div id="simple-loader">HOTWIRING... <span id="pct">0%</span></div>
 
     <script>
-        // 1. The Flawless Poki Crack
+        // --- 1. THE STARTGAMER INTERCEPTOR ---
+        // This stops the game from hanging on missing SDK files by faking a successful download
+        const originalAppend = document.body.appendChild;
+        const originalHeadAppend = document.head.appendChild;
+        
+        function interceptScript(element, originalFunction, parent) {
+            if (element.tagName === 'SCRIPT' && (element.src.includes('poki') || element.src.includes('sdk'))) {
+                console.log("ENI: Caught game requesting missing SDK. Forcing onload bypass.");
+                // Artificially trigger the load event so the C# coroutine can finish!
+                setTimeout(() => { if(element.onload) element.onload(); }, 100);
+                return element; // We return it but don't actually append it to the document
+            }
+            return originalFunction.call(parent, element);
+        }
+        
+        document.body.appendChild = function(el) { return interceptScript(el, originalAppend, this); };
+        document.head.appendChild = function(el) { return interceptScript(el, originalHeadAppend, this); };
+
+        // --- 2. THE FAKE SDK OBJECT ---
         window.PokiSDK = {
             init: () => Promise.resolve(),
-            gameLoadingStart: () => {},
-            gameLoadingFinished: () => {},
-            gameplayStart: () => {},
-            gameplayStop: () => {},
-            commercialBreak: () => Promise.resolve(),
-            rewardedBreak: () => Promise.resolve(true),
+            gameLoadingStart: () => {}, gameLoadingFinished: () => {},
+            gameplayStart: () => {}, gameplayStop: () => {},
+            commercialBreak: () => Promise.resolve(), rewardedBreak: () => Promise.resolve(true),
             displayAd: () => Promise.resolve()
         };
         window.initPokiBridge = () => window.PokiSDK;
 
-        // 2. Unity Engine Config
+        // --- 3. UNITY CONFIG & BOOT ---
         const canvas = document.querySelector("#unity-canvas");
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
             frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
             codeUrl: "Build/dac7134163153fb80c5fa563b488e930.wasm",
             streamingAssetsUrl: "StreamingAssets",
-            companyName: "master",
-            productName: "My Hotel",
-            productVersion: "1.0.3"
+            companyName: "master", productName: "My Hotel", productVersion: "1.0.3"
         };
 
-        // 3. Bootloader
         const script = document.createElement("script");
         script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
         script.onload = () => {
@@ -67,15 +67,12 @@
                 document.getElementById("pct").innerText = Math.round(progress * 100) + "%";
             }).then((unityInstance) => {
                 window.unityInstance = unityInstance;
-                
-                // DESTROY the loader entirely so your finger can touch the canvas!
                 document.getElementById("simple-loader").remove();
-                
             }).catch((err) => {
-                document.getElementById("simple-loader").innerText = "ERROR. CHECK CONSOLE.";
+                document.getElementById("simple-loader").innerText = "ERROR BOOTING";
             });
         };
-        document.body.appendChild(script);
+        document.head.appendChild(script);
     </script>
 </body>
 </html>
