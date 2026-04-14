@@ -1,100 +1,53 @@
 <!DOCTYPE html>
 <html lang="en-us">
-<head>
+  <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel 2 | Asset Sniffer</title>
-    <style>
-        body, html { background: #111; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
-        #unity-canvas { width: 100%; height: 50%; display: block; background: #000; }
-        #eni-console {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
-            background: rgba(0, 10, 20, 0.98); color: #00ffaa; font-family: monospace; font-size: 11px;
-            overflow-y: auto; padding: 10px; box-sizing: border-box; border-top: 3px solid #00ccff; word-wrap: break-word; z-index: 9999;
-        }
-        .log-req { color: #aaa; }
-        .log-missing { color: #ff3333; font-weight: bold; background: #330000; padding: 4px; margin: 2px 0; border-left: 3px solid red;}
-    </style>
-</head>
-<body>
-    <canvas id="unity-canvas"></canvas>
-    <div id="eni-console"><div>[ENI Asset Sniffer v14.0] Watching network traffic for missing files...</div></div>
-
+    <title>Hotel 2 Ghost</title>
     <script>
-        const eniConsole = document.getElementById('eni-console');
-        function printLog(msg, cssClass) {
-            const div = document.createElement('div'); div.className = cssClass;
-            div.innerText = "> " + msg; eniConsole.appendChild(div); eniConsole.scrollTop = eniConsole.scrollHeight;
+      // THE DOMAIN GHOST
+      // This intercepts all hostname checks and forces them to return StartGamer
+      const fakeDomain = "startgamer.ru";
+      
+      const proxyHandler = {
+        get: function(target, prop) {
+          if (prop === 'hostname' || prop === 'host') return fakeDomain;
+          if (prop === 'origin') return `https://${fakeDomain}`;
+          return target[prop];
         }
+      };
 
-        // --- 1. THE ASSET SNIFFER ---
-        const originalFetch = window.fetch;
-        window.fetch = async function(...args) {
-            const url = args[0];
-            if (typeof url === 'string') printLog(`FETCH: ${url.split('/').pop().substring(0, 40)}`, 'log-req');
-            
-            try {
-                const response = await originalFetch.apply(this, args);
-                if (!response.ok) {
-                    printLog(`[MISSING ASSET] ${response.status} Error fetching: ${url}`, 'log-missing');
-                }
-                return response;
-            } catch (e) {
-                printLog(`[FETCH FAILED] Network error for: ${url}`, 'log-missing');
-                throw e;
-            }
-        };
+      window.location = new Proxy(window.location, proxyHandler);
+      // Also spoof document domain
+      try {
+        Object.defineProperty(document, 'domain', { get: () => fakeDomain });
+        Object.defineProperty(document, 'URL', { get: () => `https://${fakeDomain}/game/my-hotel` });
+      } catch(e) {}
 
-        const origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url) {
-            this._targetUrl = url;
-            printLog(`XHR: ${url.split('/').pop().substring(0, 40)}`, 'log-req');
-            origOpen.apply(this, arguments);
-        };
-        
-        const origSend = XMLHttpRequest.prototype.send;
-        XMLHttpRequest.prototype.send = function() {
-            this.addEventListener('load', function() {
-                if (this.status >= 400) {
-                    printLog(`[MISSING ASSET] ${this.status} Error fetching: ${this._targetUrl}`, 'log-missing');
-                }
-            });
-            this.addEventListener('error', function() {
-                printLog(`[XHR FAILED] Network error for: ${this._targetUrl}`, 'log-missing');
-            });
-            origSend.apply(this, arguments);
-        };
-
-        // --- 2. BASIC POKI STUBS ---
-        window.PokiSDK = {
-            init: () => Promise.resolve(),
-            gameLoadingStart: () => {}, gameLoadingFinished: () => {},
-            gameplayStart: () => {}, gameplayStop: () => {},
-            commercialBreak: () => Promise.resolve(false), rewardedBreak: () => Promise.resolve(true), displayAd: () => Promise.resolve()
-        };
-        window.initPokiBridge = () => window.PokiSDK;
-
-        // --- 3. UNITY BOOT (HOTEL 2) ---
-        const config = {
-            dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
-            frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
-            codeUrl: "Build/dac7134163153fb80c5fa563b488e930.wasm",
-            streamingAssetsUrl: "StreamingAssets",
-            companyName: "master", productName: "My Hotel", productVersion: "1.0.3"
-        };
-
-        const script = document.createElement("script");
-        script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
-        script.onload = () => {
-            createUnityInstance(document.querySelector("#unity-canvas"), config, (progress) => {
-                // Muting progress to keep the terminal clean for missing assets
-            }).then((unityInstance) => {
-                printLog("Engine Booted. Awaiting asset loading...", "log-req");
-                window.unityInstance = unityInstance;
-            }).catch((err) => {
-                printLog(`FATAL BOOT ERROR: ${err}`, 'log-missing');
-            });
-        };
-        document.body.appendChild(script);
+      // Asset Redirector
+      const originalFetch = window.fetch;
+      window.fetch = async function(input, init) {
+          let url = typeof input === 'string' ? input : (input.url ? input.url : input);
+          if (url.includes('poki') || url.includes('StreamingAssets')) {
+              const parts = url.split('StreamingAssets');
+              url = "./StreamingAssets" + parts[parts.length - 1];
+          }
+          return originalFetch(url, init);
+      };
     </script>
-</body>
+  </head>
+  <body>
+    <canvas id="unity-canvas" style="width: 100vw; height: 100vh;"></canvas>
+    <script src="Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js"></script>
+    <script>
+      createUnityInstance(document.querySelector("#unity-canvas"), {
+        dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
+        frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
+        codeUrl: "Build/dac7134163153fb80c5fa563b488e930.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "master",
+        productName: "My Hotel",
+        productVersion: "1.0.3"
+      });
+    </script>
+  </body>
 </html>
