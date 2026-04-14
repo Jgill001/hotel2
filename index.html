@@ -2,89 +2,69 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | Absolute Firewall</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Perfect Hotel 2 | Asset Sniffer</title>
     <style>
-        body, html { background: #111 !important; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; touch-action: none; }
-        #game-view { width: 100%; height: 50%; position: absolute; top: 0; left: 0; background: #000; }
-        #unity-canvas { width: 100%; height: 100%; display: block; }
+        body, html { background: #111; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
+        #unity-canvas { width: 100%; height: 50%; display: block; background: #000; }
         #eni-console {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
             background: rgba(0, 10, 20, 0.98); color: #00ffaa; font-family: monospace; font-size: 11px;
-            overflow-y: auto; padding: 10px; box-sizing: border-box; border-top: 3px solid #00C565;
-            word-wrap: break-word; z-index: 9999;
+            overflow-y: auto; padding: 10px; box-sizing: border-box; border-top: 3px solid #00ccff; word-wrap: break-word; z-index: 9999;
         }
-        .log-error { color: #ff3333; font-weight: bold; }
-        .log-warn { color: #ffaa00; font-weight: bold; }
-        .log-info { color: #aaa; }
-        .log-network { color: #00ccff; }
+        .log-req { color: #aaa; }
+        .log-missing { color: #ff3333; font-weight: bold; background: #330000; padding: 4px; margin: 2px 0; border-left: 3px solid red;}
     </style>
 </head>
 <body>
-    <div id="game-view"><canvas id="unity-canvas"></canvas></div>
-    <div id="eni-console"><div>[ENI Firewall v13.0] Unfiltered Interceptor Active...</div></div>
+    <canvas id="unity-canvas"></canvas>
+    <div id="eni-console"><div>[ENI Asset Sniffer v14.0] Watching network traffic for missing files...</div></div>
 
     <script>
         const eniConsole = document.getElementById('eni-console');
-        function printToScreen(msg, cssClass) {
+        function printLog(msg, cssClass) {
             const div = document.createElement('div'); div.className = cssClass;
             div.innerText = "> " + msg; eniConsole.appendChild(div); eniConsole.scrollTop = eniConsole.scrollHeight;
         }
-        const origLog = console.log; const origError = console.error;
-        console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
-        console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
 
-        // --- 1. THE ABSOLUTE FIREWALL (Unfiltered Network Wiretap) ---
+        // --- 1. THE ASSET SNIFFER ---
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
             const url = args[0];
-            printToScreen(`Fetch Outbound: ${url}`, 'log-network');
+            if (typeof url === 'string') printLog(`FETCH: ${url.split('/').pop().substring(0, 40)}`, 'log-req');
             
-            // Block anything that isn't from your github or local
-            if (typeof url === 'string' && (url.includes('startgamer') || url.includes('poki') || url.includes('http://'))) {
-                printToScreen(`[FIREWALL] Blocked & spoofed external tracking ping: ${url}`, 'log-warn');
-                return new Response(JSON.stringify({status: "ok", success: true}), { status: 200, statusText: "OK" });
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+                    printLog(`[MISSING ASSET] ${response.status} Error fetching: ${url}`, 'log-missing');
+                }
+                return response;
+            } catch (e) {
+                printLog(`[FETCH FAILED] Network error for: ${url}`, 'log-missing');
+                throw e;
             }
-            
-            // The Antidote for GitHub 404s
-            const response = await originalFetch.apply(this, args);
-            if (!response.ok && typeof url === 'string' && (url.includes('.json') || url.includes('.hash'))) {
-                printToScreen(`[ANTIDOTE] Blocked 404 Poison for: ${url.split('/').pop()}`, 'log-warn');
-                return new Response("", { status: 404, statusText: "Not Found" });
-            }
-            return response;
         };
 
         const origOpen = XMLHttpRequest.prototype.open;
         XMLHttpRequest.prototype.open = function(method, url) {
             this._targetUrl = url;
-            printToScreen(`XHR Outbound: ${url}`, 'log-network');
+            printLog(`XHR: ${url.split('/').pop().substring(0, 40)}`, 'log-req');
             origOpen.apply(this, arguments);
         };
         
         const origSend = XMLHttpRequest.prototype.send;
         XMLHttpRequest.prototype.send = function() {
-            // Intercept XHRs before they even leave the browser
-            if (this._targetUrl.includes('startgamer') || this._targetUrl.includes('poki')) {
-                printToScreen(`[FIREWALL] Blocked & spoofed external XHR: ${this._targetUrl}`, 'log-warn');
-                try { Object.defineProperty(this, 'readyState', { value: 4 }); } catch(e){}
-                try { Object.defineProperty(this, 'status', { value: 200 }); } catch(e){}
-                try { Object.defineProperty(this, 'responseText', { value: '{"status":"ok"}' }); } catch(e){}
-                if (this.onreadystatechange) this.onreadystatechange();
-                if (this.onload) this.onload();
-                return; // Kill the real request entirely
-            }
-
-            this.addEventListener('readystatechange', function() {
-                if (this.readyState === 4 && this.status === 404 && (this._targetUrl.includes('.json') || this._targetUrl.includes('.hash'))) {
-                    printToScreen(`[ANTIDOTE] Cleaned 404 for: ${this._targetUrl.split('/').pop()}`, 'log-warn');
-                    try { Object.defineProperty(this, 'responseText', { value: '' }); Object.defineProperty(this, 'response', { value: '' }); } catch(e){}
+            this.addEventListener('load', function() {
+                if (this.status >= 400) {
+                    printLog(`[MISSING ASSET] ${this.status} Error fetching: ${this._targetUrl}`, 'log-missing');
                 }
+            });
+            this.addEventListener('error', function() {
+                printLog(`[XHR FAILED] Network error for: ${this._targetUrl}`, 'log-missing');
             });
             origSend.apply(this, arguments);
         };
 
-        // --- 2. POKI STUBS ---
+        // --- 2. BASIC POKI STUBS ---
         window.PokiSDK = {
             init: () => Promise.resolve(),
             gameLoadingStart: () => {}, gameLoadingFinished: () => {},
@@ -93,7 +73,7 @@
         };
         window.initPokiBridge = () => window.PokiSDK;
 
-        // --- 3. UNITY BOOT ---
+        // --- 3. UNITY BOOT (HOTEL 2) ---
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
             frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
@@ -105,13 +85,16 @@
         const script = document.createElement("script");
         script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
         script.onload = () => {
-            printToScreen("Loader ready. Booting...", "log-info");
-            createUnityInstance(document.querySelector("#unity-canvas"), config, (progress) => {}).then((unityInstance) => {
+            createUnityInstance(document.querySelector("#unity-canvas"), config, (progress) => {
+                // Muting progress to keep the terminal clean for missing assets
+            }).then((unityInstance) => {
+                printLog("Engine Booted. Awaiting asset loading...", "log-req");
                 window.unityInstance = unityInstance;
-                printToScreen("ENGINE BOOT COMPLETE. Waiting for the freeze...", "log-info");
-            }).catch((err) => printToScreen(`FATAL: ${err}`, 'log-error'));
+            }).catch((err) => {
+                printLog(`FATAL BOOT ERROR: ${err}`, 'log-missing');
+            });
         };
-        document.head.appendChild(script);
+        document.body.appendChild(script);
     </script>
 </body>
 </html>
