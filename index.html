@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel</title>
+    <title>My Perfect Hotel | Loop Breaker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body, html { 
@@ -31,8 +31,8 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer;
         }
         #error-log {
-            color: #ffcccc; font-family: monospace; font-size: 10px; 
-            margin-top: 20px; text-align: center; max-width: 80%; word-wrap: break-word;
+            color: #ff3333; font-family: monospace; font-size: 12px; font-weight: bold;
+            margin-top: 20px; text-align: center; max-width: 90%; word-wrap: break-word;
         }
     </style>
 </head>
@@ -47,7 +47,23 @@
     <canvas id="unity-canvas"></canvas>
 
     <script>
-        // 1. The Flawless Poki Crack
+        // --- 1. FATAL CRASH CATCHER ---
+        // If WebAssembly runs out of RAM or hits a fatal exception, we will see it here.
+        window.onerror = function(msg, url, line) {
+            const errDiv = document.getElementById("error-log");
+            errDiv.innerText += `\nCRASH: ${msg}`;
+            if (msg.toLowerCase().includes("memory") || msg.toLowerCase().includes("out of bounds")) {
+                errDiv.innerText += `\nFATAL: Phone ran out of Memory (RAM).`;
+            }
+        };
+
+        // --- 2. THE LOOP BREAKER (Global Flags) ---
+        // Pacifying sloppy developers who use synchronous polling
+        window.pokiIsReady = true;
+        window.isPokiReady = true;
+        window.pokiLoaded = true;
+        window.adblocker = false;
+        
         window.PokiSDK = {
             init: () => Promise.resolve(),
             gameLoadingStart: () => {},
@@ -58,10 +74,9 @@
             rewardedBreak: () => Promise.resolve(true),
             displayAd: () => Promise.resolve()
         };
-        // The game expects the bridge to return the SDK object itself
         window.initPokiBridge = () => window.PokiSDK;
 
-        // 2. Unity Engine Config
+        // --- 3. UNITY CONFIG ---
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
             frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
@@ -72,7 +87,7 @@
             productVersion: "1.0.3"
         };
 
-        // 3. Bootloader
+        // --- 4. BOOTLOADER ---
         const script = document.createElement("script");
         script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
         script.onload = () => {
@@ -80,20 +95,17 @@
                 document.getElementById("progress-fill").style.width = (progress * 100) + "%";
             }).then((unityInstance) => {
                 window.unityInstance = unityInstance;
-                // Engine is fully loaded, show the play button!
                 document.getElementById("progress-bar").style.display = "none";
                 document.getElementById("play-btn").style.display = "block";
             }).catch((err) => {
-                document.getElementById("error-log").innerText = "Engine Error: " + err;
+                document.getElementById("error-log").innerText += "\nEngine Boot Error: " + err;
             });
         };
         document.body.appendChild(script);
 
-        // 4. The Ignition Sequence (Audio Unlock + Brute Force Handshake)
+        // --- 5. IGNITION ---
         function startGame() {
             document.getElementById("loading-screen").style.display = "none";
-            
-            // If the game's internal 50% UI is still stuck, we kick the door down
             if (window.unityInstance) {
                 try { window.unityInstance.SendMessage("PokiUnitySDK", "Ready"); } catch(e){}
                 try { window.unityInstance.SendMessage("PokiUnitySDK", "OnPokiInit"); } catch(e){}
