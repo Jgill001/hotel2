@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | The Breach</title>
+    <title>My Perfect Hotel | Skeleton Key & Terminal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body, html { background: #111 !important; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
@@ -19,21 +19,11 @@
         .log-info { color: #aaa; }
         .log-network { color: #00ccff; }
         .log-poki { color: #ff00ff; font-weight: bold; background: #330033; padding: 2px; }
-        
-        #breach-btn {
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            background: red; color: white; font-weight: bold; padding: 15px 30px;
-            font-size: 18px; border: 2px solid white; cursor: pointer; z-index: 10000;
-            display: none; border-radius: 10px; text-transform: uppercase;
-        }
     </style>
 </head>
 <body>
-    <div id="game-view">
-        <canvas id="unity-canvas"></canvas>
-        <button id="breach-btn" onclick="fireBreach()">KICKSTART C# ENGINE</button>
-    </div>
-    <div id="eni-console"><div>[ENI Breach Protocol] Waiting for the stall...</div></div>
+    <div id="game-view"><canvas id="unity-canvas"></canvas></div>
+    <div id="eni-console"><div>[ENI Skeleton Key v11.0] Terminal Restored. Listening...</div></div>
 
     <script>
         // --- 1. TERMINAL SETUP ---
@@ -75,69 +65,4 @@
             const url = args[0];
             const response = await originalFetch.apply(this, args);
             if (!response.ok && typeof url === 'string' && (url.includes('.json') || url.includes('.hash'))) {
-                printToScreen(`[ANTIDOTE] Blocked Fetch Poison for: ${url.split('/').pop()}`, "log-warn");
-                return new Response("", { status: 404, statusText: "Not Found" });
-            }
-            return response;
-        };
-
-        // --- 3. VERBOSE POKI TRACKER ---
-        window.pokiIsReady = true;
-        window.isPokiReady = true;
-        window.PokiSDK = {
-            init: () => { printToScreen("[POKI] Game requested init()", "log-poki"); return Promise.resolve(); },
-            gameLoadingStart: () => { printToScreen("[POKI] gameLoadingStart()", "log-poki"); },
-            gameLoadingFinished: () => { printToScreen("[POKI] gameLoadingFinished()", "log-poki"); },
-            gameplayStart: () => { printToScreen("[POKI] gameplayStart()", "log-poki"); },
-            gameplayStop: () => { printToScreen("[POKI] gameplayStop()", "log-poki"); },
-            commercialBreak: () => { printToScreen("[POKI] commercialBreak()", "log-poki"); return Promise.resolve(false); },
-            rewardedBreak: () => { printToScreen("[POKI] rewardedBreak()", "log-poki"); return Promise.resolve(true); },
-            displayAd: () => { printToScreen("[POKI] displayAd()", "log-poki"); return Promise.resolve(); },
-            getURLParam: (param) => { printToScreen(`[POKI] getURLParam(${param})`, "log-poki"); return ""; }
-        };
-        window.initPokiBridge = () => {
-            printToScreen("[POKI] Bridge Successfully Initialized", "log-poki");
-            return window.PokiSDK;
-        };
-
-        // --- 4. THE BREACH FUNCTION ---
-        function fireBreach() {
-            printToScreen("!!! FIRING MANUAL BREACH COMMANDS !!!", "log-warn");
-            document.getElementById('breach-btn').style.display = 'none';
-            if (window.unityInstance) {
-                try { window.unityInstance.SendMessage("PokiUnitySDK", "Ready"); printToScreen("Sent: PokiUnitySDK -> Ready", "log-warn"); } catch(e) {}
-                try { window.unityInstance.SendMessage("PokiUnitySDK", "OnPokiInit"); printToScreen("Sent: PokiUnitySDK -> OnPokiInit", "log-warn"); } catch(e) {}
-                try { window.unityInstance.SendMessage("PokiUnitySDK", "pokiInit"); printToScreen("Sent: PokiUnitySDK -> pokiInit", "log-warn"); } catch(e) {}
-                try { window.unityInstance.SendMessage("GameManager", "StartGame"); printToScreen("Sent: GameManager -> StartGame", "log-warn"); } catch(e) {}
-            }
-        }
-
-        // --- 5. UNITY CONFIG & BOOT ---
-        const canvas = document.querySelector("#unity-canvas");
-        const config = {
-            dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
-            frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
-            codeUrl: "Build/dac7134163153fb80c5fa563b488e930.wasm",
-            streamingAssetsUrl: "StreamingAssets",
-            companyName: "master", productName: "My Hotel", productVersion: "1.0.3"
-        };
-
-        const script = document.createElement("script");
-        script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
-        script.onload = () => {
-            createUnityInstance(canvas, config, (progress) => {
-                // Do nothing with progress so we don't spam the log
-            }).then((unityInstance) => {
-                window.unityInstance = unityInstance;
-                printToScreen("ENGINE BOOT COMPLETE. Waiting 5 seconds, then exposing Breach Button...", "log-info");
-                
-                // Show the kickstart button shortly after boot
-                setTimeout(() => { document.getElementById('breach-btn').style.display = 'block'; }, 5000);
-            }).catch((err) => {
-                printToScreen(`FATAL ERROR: ${err}`, 'log-error');
-            });
-        };
-        document.head.appendChild(script);
-    </script>
-</body>
-</html>
+                printToScreen(`[ANTIDOTE] Blocked Fetch Poison for: ${
