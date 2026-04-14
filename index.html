@@ -65,4 +65,70 @@
             const url = args[0];
             const response = await originalFetch.apply(this, args);
             if (!response.ok && typeof url === 'string' && (url.includes('.json') || url.includes('.hash'))) {
-                printToScreen(`[ANTIDOTE] Blocked Fetch Poison for: ${
+                printToScreen(`[ANTIDOTE] Blocked Fetch Poison for: ${url.split('/').pop()}`, "log-warn");
+                return new Response("", { status: 404, statusText: "Not Found" });
+            }
+            return response;
+        };
+
+        // --- 3. POKI STUBS ---
+        window.pokiIsReady = true; window.isPokiReady = true;
+        window.PokiSDK = {
+            init: () => { printToScreen("[POKI] init()", "log-poki"); return Promise.resolve(); },
+            gameLoadingStart: () => { printToScreen("[POKI] gameLoadingStart()", "log-poki"); },
+            gameLoadingFinished: () => { printToScreen("[POKI] gameLoadingFinished()", "log-poki"); },
+            gameplayStart: () => { printToScreen("[POKI] gameplayStart()", "log-poki"); },
+            gameplayStop: () => { printToScreen("[POKI] gameplayStop()", "log-poki"); },
+            commercialBreak: () => { printToScreen("[POKI] commercialBreak()", "log-poki"); return Promise.resolve(false); },
+            rewardedBreak: () => { printToScreen("[POKI] rewardedBreak()", "log-poki"); return Promise.resolve(true); },
+            displayAd: () => { printToScreen("[POKI] displayAd()", "log-poki"); return Promise.resolve(); },
+            getURLParam: (param) => { printToScreen(`[POKI] getURLParam(${param})`, "log-poki"); return ""; }
+        };
+        window.initPokiBridge = () => { printToScreen("[POKI] Bridge Initialized", "log-poki"); return window.PokiSDK; };
+
+        // --- 4. THE SKELETON KEY (Auto-Breach) ---
+        function initiateSkeletonKey() {
+            if (!window.unityInstance) return;
+            const targets = ["(singleton) PokiUnitySDK", "PokiUnitySDK", "GameManager"];
+            const commands = ["Ready", "OnPokiInit", "pokiInit", "StartGame"];
+            let sent = false;
+            
+            targets.forEach(target => {
+                commands.forEach(command => {
+                    try { 
+                        window.unityInstance.SendMessage(target, command); 
+                        sent = true;
+                    } catch(e) {}
+                });
+            });
+            if (sent) printToScreen("Skeleton Key fired into C# Engine...", "log-warn");
+        }
+
+        // --- 5. UNITY CONFIG & BOOT ---
+        const canvas = document.querySelector("#unity-canvas");
+        const config = {
+            dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
+            frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
+            codeUrl: "Build/dac7134163153fb80c5fa563b488e930.wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "master", productName: "My Hotel", productVersion: "1.0.3"
+        };
+
+        const script = document.createElement("script");
+        script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
+        script.onload = () => {
+            printToScreen("Loader script executed. Booting Unity...", "log-info");
+            createUnityInstance(canvas, config, (progress) => {
+                // Progress muted to keep log clean
+            }).then((unityInstance) => {
+                window.unityInstance = unityInstance;
+                printToScreen("ENGINE BOOT COMPLETE. Firing Skeleton Key every 2s...", "log-info");
+                setInterval(initiateSkeletonKey, 2000);
+            }).catch((err) => {
+                printToScreen(`FATAL ERROR: ${err}`, 'log-error');
+            });
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
