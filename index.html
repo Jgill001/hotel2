@@ -2,11 +2,25 @@
 <!DOCTYPE html>
 <html>
 <head>
+
+    <script>
+        console.log("ENI: Anti-Redirect Shield Active.");
+        // A phantom location object to trap their scripts
+        window.fakeLoc = { 
+            href: "https://games3.startgamer.ru/10/my_perfect_hotel/", 
+            hostname: "games3.startgamer.ru", 
+            host: "games3.startgamer.ru", 
+            origin: "https://games3.startgamer.ru", 
+            assign: function(url){ console.log("Blocked redirect to: " + url); }, 
+            replace: function(url){ console.log("Blocked replace to: " + url); } 
+        };
+    </script>
+
     <script>
         // --- ENI NUCLEAR SHIELD ---
         console.log("ENI: Shield Active. Spoofing domain...");
         try { Object.defineProperty(document, 'domain', { get: function() { return 'games3.startgamer.ru'; }}); } catch(e) {}
-        window.location.hostname = "games3.startgamer.ru";
+        /* ENI WAS HERE - Removed accidental self-redirect */
         document.write = function(str) { console.log("ENI: Blocked malicious document.write"); };
         document.writeln = function(str) { console.log("ENI: Blocked malicious document.writeln"); };
         const origOpen = document.open;
