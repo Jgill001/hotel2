@@ -1,134 +1,67 @@
 <!DOCTYPE html>
 <html lang="en-us">
-<head>
+  <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | Skeleton Key & Terminal</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Perfect Hotel</title>
     <style>
-        body, html { background: #111 !important; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
-        #game-view { width: 100%; height: 50%; position: absolute; top: 0; left: 0; background: #000; }
-        #unity-canvas { width: 100%; height: 100%; display: block; }
-        #eni-console {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
-            background: rgba(0, 10, 20, 0.98); color: #00ffaa; font-family: monospace; font-size: 11px;
-            overflow-y: auto; padding: 10px; box-sizing: border-box; border-top: 3px solid #00C565;
-            word-wrap: break-word; z-index: 9999;
-        }
-        .log-error { color: #ff3333; font-weight: bold; }
-        .log-warn { color: #ffaa00; font-weight: bold; }
-        .log-info { color: #aaa; }
-        .log-network { color: #00ccff; }
-        .log-poki { color: #ff00ff; font-weight: bold; background: #330033; padding: 2px; }
+      body { 
+        padding: 0; 
+        margin: 0; 
+        background-color: #00C565; 
+        overflow: hidden; 
+        width: 100vw; 
+        height: 100dvh; 
+        position: fixed; 
+      }
+      #unity-canvas { 
+        width: 100vw; 
+        height: 100dvh; 
+        background: #00C565; 
+        display: block; 
+        outline: none; 
+      }
     </style>
-</head>
-<body>
-    <div id="game-view"><canvas id="unity-canvas"></canvas></div>
-    <div id="eni-console"><div>[ENI Skeleton Key v11.0] Terminal Restored. Listening...</div></div>
 
     <script>
-        // --- 1. TERMINAL SETUP ---
-        const eniConsole = document.getElementById('eni-console');
-        function printToScreen(msg, cssClass) {
-            const div = document.createElement('div'); div.className = cssClass;
-            div.innerText = "> " + msg; eniConsole.appendChild(div); eniConsole.scrollTop = eniConsole.scrollHeight;
-        }
+      // Asset Redirector - Essential for loading files from GitHub
+      const originalFetch = window.fetch;
+      window.fetch = async function(input, init) {
+          let url = typeof input === 'string' ? input : (input.url ? input.url : input);
+          if (url.includes('poki') || url.includes('StreamingAssets')) {
+              const parts = url.split('StreamingAssets');
+              url = "./StreamingAssets" + parts[parts.length - 1];
+          }
+          return originalFetch(url, init);
+      };
 
-        const origLog = console.log; const origError = console.error;
-        console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
-        console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
-        window.onerror = function(msg, src, lineno) { printToScreen(`CRASH: ${msg} @ line ${lineno}`, 'log-error'); };
+      // Engine Bridge - Essential to prevent initialization errors
+      window.initPokiBridge = () => true;
 
-        // --- 2. THE ANTIDOTE ---
-        const origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url) {
-            this._targetUrl = url;
-            if (url.includes('.bundle') || url.includes('.json') || url.includes('.hash')) {
-                printToScreen(`XHR Req: ${url.split('/').pop()}`, 'log-network');
-            }
-            origOpen.apply(this, arguments);
-        };
-        
-        const origSend = XMLHttpRequest.prototype.send;
-        XMLHttpRequest.prototype.send = function() {
-            this.addEventListener('readystatechange', function() {
-                if (this.readyState === 4 && this.status === 404 && (this._targetUrl.includes('.json') || this._targetUrl.includes('.hash'))) {
-                    printToScreen(`[ANTIDOTE] Blocked GitHub HTML Poison for: ${this._targetUrl.split('/').pop()}`, "log-warn");
-                    try { Object.defineProperty(this, 'responseText', { value: '' }); } catch(e){}
-                    try { Object.defineProperty(this, 'response', { value: '' }); } catch(e){}
-                }
-            });
-            origSend.apply(this, arguments);
-        };
-
-        const originalFetch = window.fetch;
-        window.fetch = async function(...args) {
-            const url = args[0];
-            const response = await originalFetch.apply(this, args);
-            if (!response.ok && typeof url === 'string' && (url.includes('.json') || url.includes('.hash'))) {
-                printToScreen(`[ANTIDOTE] Blocked Fetch Poison for: ${url.split('/').pop()}`, "log-warn");
-                return new Response("", { status: 404, statusText: "Not Found" });
-            }
-            return response;
-        };
-
-        // --- 3. POKI STUBS ---
-        window.pokiIsReady = true; window.isPokiReady = true;
-        window.PokiSDK = {
-            init: () => { printToScreen("[POKI] init()", "log-poki"); return Promise.resolve(); },
-            gameLoadingStart: () => { printToScreen("[POKI] gameLoadingStart()", "log-poki"); },
-            gameLoadingFinished: () => { printToScreen("[POKI] gameLoadingFinished()", "log-poki"); },
-            gameplayStart: () => { printToScreen("[POKI] gameplayStart()", "log-poki"); },
-            gameplayStop: () => { printToScreen("[POKI] gameplayStop()", "log-poki"); },
-            commercialBreak: () => { printToScreen("[POKI] commercialBreak()", "log-poki"); return Promise.resolve(false); },
-            rewardedBreak: () => { printToScreen("[POKI] rewardedBreak()", "log-poki"); return Promise.resolve(true); },
-            displayAd: () => { printToScreen("[POKI] displayAd()", "log-poki"); return Promise.resolve(); },
-            getURLParam: (param) => { printToScreen(`[POKI] getURLParam(${param})`, "log-poki"); return ""; }
-        };
-        window.initPokiBridge = () => { printToScreen("[POKI] Bridge Initialized", "log-poki"); return window.PokiSDK; };
-
-        // --- 4. THE SKELETON KEY (Auto-Breach) ---
-        function initiateSkeletonKey() {
-            if (!window.unityInstance) return;
-            const targets = ["(singleton) PokiUnitySDK", "PokiUnitySDK", "GameManager"];
-            const commands = ["Ready", "OnPokiInit", "pokiInit", "StartGame"];
-            let sent = false;
-            
-            targets.forEach(target => {
-                commands.forEach(command => {
-                    try { 
-                        window.unityInstance.SendMessage(target, command); 
-                        sent = true;
-                    } catch(e) {}
-                });
-            });
-            if (sent) printToScreen("Skeleton Key fired into C# Engine...", "log-warn");
-        }
-
-        // --- 5. UNITY CONFIG & BOOT ---
-        const canvas = document.querySelector("#unity-canvas");
-        const config = {
-            dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
-            frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
-            codeUrl: "Build/dac7134163153fb80c5fa563b488e930.wasm",
-            streamingAssetsUrl: "StreamingAssets",
-            companyName: "master", productName: "My Hotel", productVersion: "1.0.3"
-        };
-
-        const script = document.createElement("script");
-        script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
-        script.onload = () => {
-            printToScreen("Loader script executed. Booting Unity...", "log-info");
-            createUnityInstance(canvas, config, (progress) => {
-                // Progress muted to keep log clean
-            }).then((unityInstance) => {
-                window.unityInstance = unityInstance;
-                printToScreen("ENGINE BOOT COMPLETE. Firing Skeleton Key every 2s...", "log-info");
-                setInterval(initiateSkeletonKey, 2000);
-            }).catch((err) => {
-                printToScreen(`FATAL ERROR: ${err}`, 'log-error');
-            });
-        };
-        document.head.appendChild(script);
+      window.PokiSDK = {
+          init: () => Promise.resolve({adblocked: false}),
+          commercialBreak: () => Promise.resolve(),
+          rewardedBreak: () => new Promise(() => {}), // Silent wait if an ad is clicked
+          gameplayStart: () => {}, 
+          gameplayStop: () => {}
+      };
+      window.rewardedBreak = window.PokiSDK.rewardedBreak;
     </script>
-</body>
+  </head>
+  <body>
+
+    <canvas id="unity-canvas"></canvas>
+
+    <script src="Build/ea153e321edf23b9a40b38d65ce41d01.loader.js"></script>
+    <script>
+      createUnityInstance(document.querySelector("#unity-canvas"), {
+        dataUrl: "Build/101a0553a2917fd4c62a7e2159d30814.data",
+        frameworkUrl: "Build/2809ee090e7f1bf0e1a32425590981e7.framework.js",
+        codeUrl: "Build/9d94f3fbc22c5914756c67722e0cdaca.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "master",
+        productName: "My Hotel",
+        productVersion: "1.0.3"
+      });
+    </script>
+  </body>
 </html>
