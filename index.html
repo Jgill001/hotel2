@@ -2,128 +2,77 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | Heart Monitor</title>
+    <title>My Perfect Hotel</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body, html { 
-            background: #111 !important; margin: 0; padding: 0; 
+            background: #00C565 !important; margin: 0; padding: 0; 
             width: 100vw; height: 100vh; overflow: hidden; 
+            /* Prevent double-tap zoom on mobile */
+            touch-action: none; 
         }
-        #game-view { 
-            width: 100%; height: 50%; position: absolute; top: 0; left: 0; background: #00C565;
+        #unity-container { 
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0; 
         }
-        #unity-canvas { width: 100%; height: 100%; display: block; }
+        #unity-canvas { 
+            width: 100%; height: 100%; display: block; 
+        }
         
-        #loading-screen { 
-            position: absolute; top:0; left:0; width:100%; height:100%; 
-            background: #00C565; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; z-index: 999; 
-            color: white; font-family: sans-serif; 
+        #simple-loader { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #00C565; display: flex; justify-content: center; align-items: center; 
+            color: white; font-family: sans-serif; font-size: 24px; font-weight: bold;
+            z-index: 10; pointer-events: none; /* Let clicks pass through just in case! */
         }
-        #progress-bar { 
-            width: 60%; max-width: 300px; height: 12px; background: rgba(0,0,0,0.2); 
-            border-radius: 6px; margin-top: 20px; overflow: hidden; 
-        }
-        #progress-fill { width: 0%; height: 100%; background: white; transition: width 0.2s; }
-        
-        /* The Terminal */
-        #eni-console {
-            position: absolute; bottom: 0; left: 0;
-            width: 100%; height: 50%;
-            background: rgba(0, 10, 20, 0.98);
-            color: #00ffaa; font-family: monospace; font-size: 11px;
-            overflow-y: auto; padding: 10px; box-sizing: border-box;
-            border-top: 3px solid #00C565;
-            word-wrap: break-word; z-index: 9999;
-        }
-        .log-error { color: #ff3333; font-weight: bold; }
-        .log-warn { color: #ffaa00; }
-        .log-info { color: #aaa; }
-        .log-network { color: #00ccff; }
-        .log-poki { color: #ff00ff; font-weight: bold; }
-        .log-pulse { color: #444; } /* Subtle gray for the heartbeat */
     </style>
 </head>
 <body>
-    <div id="game-view">
+    <div id="unity-container">
         <canvas id="unity-canvas"></canvas>
-        <div id="loading-screen">
-            <h2 style="margin:0; text-transform: uppercase;">Checking In...</h2>
-            <div id="progress-bar"><div id="progress-fill"></div></div>
-        </div>
     </div>
-
-    <div id="eni-console"><div>[ENI Monitor v8.0] Listening...</div></div>
+    
+    <div id="simple-loader">HOTWIRING... <span id="pct">0%</span></div>
 
     <script>
-        // --- 1. TERMINAL SETUP ---
-        const eniConsole = document.getElementById('eni-console');
-        function printToScreen(msg, cssClass) {
-            const div = document.createElement('div');
-            div.className = cssClass;
-            div.innerText = "> " + (typeof msg === 'object' ? JSON.stringify(msg) : msg);
-            eniConsole.appendChild(div);
-            eniConsole.scrollTop = eniConsole.scrollHeight;
-        }
-
-        const origLog = console.log; const origWarn = console.warn; const origError = console.error;
-        console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
-        console.warn = function(...args) { origWarn(...args); printToScreen(args.join(' '), 'log-warn'); };
-        console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
-        
-        window.onerror = function(msg, src, lineno) { printToScreen(`CRASH: ${msg} @ line ${lineno}`, 'log-error'); };
-        window.addEventListener('unhandledrejection', e => { printToScreen(`PROMISE FAIL: ${e.reason}`, 'log-error'); });
-
-        // --- 2. THE HEARTBEAT ---
-        // If this stops printing, the Main Thread is locked!
-        setInterval(() => { printToScreen("[Pulse]", "log-pulse"); }, 1000);
-
-        // --- 3. NETWORK WIRETAP ---
-        const originalFetch = window.fetch;
-        window.fetch = function(url) {
-            if (url.includes('.bundle') || url.includes('.json') || url.includes('.hash')) {
-                printToScreen(`Downloading: ${url.split('/').pop()}`, 'log-network');
-            }
-            return originalFetch.apply(this, arguments);
-        };
-        const origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url) {
-            if (url.includes('.data') || url.includes('.wasm')) printToScreen(`XHR: ${url.split('/').pop()}`, 'log-network');
-            origOpen.apply(this, arguments);
-        };
-
-        // --- 4. POKI STUBS & FLAGS ---
-        window.pokiIsReady = true; window.isPokiReady = true; window.pokiLoaded = true;
+        // 1. The Flawless Poki Crack
         window.PokiSDK = {
-            init: () => { printToScreen("Poki Init Called", "log-poki"); return Promise.resolve(); },
-            gameLoadingStart: () => {}, gameLoadingFinished: () => {},
-            commercialBreak: () => Promise.resolve(), rewardedBreak: () => Promise.resolve(true)
+            init: () => Promise.resolve(),
+            gameLoadingStart: () => {},
+            gameLoadingFinished: () => {},
+            gameplayStart: () => {},
+            gameplayStop: () => {},
+            commercialBreak: () => Promise.resolve(),
+            rewardedBreak: () => Promise.resolve(true),
+            displayAd: () => Promise.resolve()
         };
-        window.initPokiBridge = () => { printToScreen("Bridge Initialized", "log-poki"); return window.PokiSDK; };
+        window.initPokiBridge = () => window.PokiSDK;
 
-        // --- 5. UNITY CONFIG & BOOT ---
+        // 2. Unity Engine Config
+        const canvas = document.querySelector("#unity-canvas");
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
             frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
             codeUrl: "Build/dac7134163153fb80c5fa563b488e930.wasm",
             streamingAssetsUrl: "StreamingAssets",
-            companyName: "master", productName: "My Hotel", productVersion: "1.0.3"
+            companyName: "master",
+            productName: "My Hotel",
+            productVersion: "1.0.3"
         };
 
+        // 3. Bootloader
         const script = document.createElement("script");
         script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
         script.onload = () => {
-            printToScreen("Loader Script Executed. Creating Instance...", "log-info");
-            createUnityInstance(document.querySelector("#unity-canvas"), config, (progress) => {
-                let pct = Math.round(progress * 100);
-                document.getElementById("progress-fill").style.width = pct + "%";
-                if (pct % 10 === 0) printToScreen(`Engine: ${pct}%`, 'log-info');
+            createUnityInstance(canvas, config, (progress) => {
+                document.getElementById("pct").innerText = Math.round(progress * 100) + "%";
             }).then((unityInstance) => {
                 window.unityInstance = unityInstance;
-                printToScreen("ENGINE BOOT COMPLETE.", "log-info");
-                document.getElementById("loading-screen").style.display = "none";
+                
+                // DESTROY the loader entirely so your finger can touch the canvas!
+                document.getElementById("simple-loader").remove();
+                
             }).catch((err) => {
-                printToScreen(`FATAL BOOT ERROR: ${err}`, 'log-error');
+                document.getElementById("simple-loader").innerText = "ERROR. CHECK CONSOLE.";
             });
         };
         document.body.appendChild(script);
