@@ -2,10 +2,10 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | Deep Cover</title>
+    <title>My Perfect Hotel | Absolute Firewall</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body, html { background: #111 !important; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; }
+        body, html { background: #111 !important; margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; touch-action: none; }
         #game-view { width: 100%; height: 50%; position: absolute; top: 0; left: 0; background: #000; }
         #unity-canvas { width: 100%; height: 100%; display: block; }
         #eni-console {
@@ -17,14 +17,14 @@
         .log-error { color: #ff3333; font-weight: bold; }
         .log-warn { color: #ffaa00; font-weight: bold; }
         .log-info { color: #aaa; }
+        .log-network { color: #00ccff; }
     </style>
 </head>
 <body>
     <div id="game-view"><canvas id="unity-canvas"></canvas></div>
-    <div id="eni-console"><div>[ENI Deep Cover v12.0] Initiating environment spoof...</div></div>
+    <div id="eni-console"><div>[ENI Firewall v13.0] Unfiltered Interceptor Active...</div></div>
 
     <script>
-        // --- 1. TERMINAL SETUP ---
         const eniConsole = document.getElementById('eni-console');
         function printToScreen(msg, cssClass) {
             const div = document.createElement('div'); div.className = cssClass;
@@ -34,54 +34,66 @@
         console.log = function(...args) { origLog(...args); printToScreen(args.join(' '), 'log-info'); };
         console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
 
-        // --- 2. THE DEEP COVER SPOOF ---
-        // Force the game to hallucinate it's on StartGamer's portal
-        printToScreen("Spoofing URL and Referrer...", "log-warn");
-        if (!window.location.href.includes("startgamer.ru")) {
-            window.history.replaceState({}, '', '?poki.com&startgamer.ru');
-        }
-        try { Object.defineProperty(document, 'referrer', { get: function() { return "https://startgamer.ru/game/31434"; } }); } catch(e) {}
-        
-        // Trick the game into thinking it's inside an iframe, not the top window
-        try { 
-            window.isTop = false;
-            Object.defineProperty(window, 'top', { get: function() { return { location: { href: "https://startgamer.ru/" } }; } }); 
-        } catch(e) {}
+        // --- 1. THE ABSOLUTE FIREWALL (Unfiltered Network Wiretap) ---
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const url = args[0];
+            printToScreen(`Fetch Outbound: ${url}`, 'log-network');
+            
+            // Block anything that isn't from your github or local
+            if (typeof url === 'string' && (url.includes('startgamer') || url.includes('poki') || url.includes('http://'))) {
+                printToScreen(`[FIREWALL] Blocked & spoofed external tracking ping: ${url}`, 'log-warn');
+                return new Response(JSON.stringify({status: "ok", success: true}), { status: 200, statusText: "OK" });
+            }
+            
+            // The Antidote for GitHub 404s
+            const response = await originalFetch.apply(this, args);
+            if (!response.ok && typeof url === 'string' && (url.includes('.json') || url.includes('.hash'))) {
+                printToScreen(`[ANTIDOTE] Blocked 404 Poison for: ${url.split('/').pop()}`, 'log-warn');
+                return new Response("", { status: 404, statusText: "Not Found" });
+            }
+            return response;
+        };
 
-        // --- 3. THE ANTIDOTE ---
         const origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url) { this._targetUrl = url; origOpen.apply(this, arguments); };
+        XMLHttpRequest.prototype.open = function(method, url) {
+            this._targetUrl = url;
+            printToScreen(`XHR Outbound: ${url}`, 'log-network');
+            origOpen.apply(this, arguments);
+        };
+        
         const origSend = XMLHttpRequest.prototype.send;
         XMLHttpRequest.prototype.send = function() {
+            // Intercept XHRs before they even leave the browser
+            if (this._targetUrl.includes('startgamer') || this._targetUrl.includes('poki')) {
+                printToScreen(`[FIREWALL] Blocked & spoofed external XHR: ${this._targetUrl}`, 'log-warn');
+                try { Object.defineProperty(this, 'readyState', { value: 4 }); } catch(e){}
+                try { Object.defineProperty(this, 'status', { value: 200 }); } catch(e){}
+                try { Object.defineProperty(this, 'responseText', { value: '{"status":"ok"}' }); } catch(e){}
+                if (this.onreadystatechange) this.onreadystatechange();
+                if (this.onload) this.onload();
+                return; // Kill the real request entirely
+            }
+
             this.addEventListener('readystatechange', function() {
                 if (this.readyState === 4 && this.status === 404 && (this._targetUrl.includes('.json') || this._targetUrl.includes('.hash'))) {
-                    printToScreen(`[ANTIDOTE] Blocked 404 Poison for: ${this._targetUrl.split('/').pop()}`, "log-warn");
+                    printToScreen(`[ANTIDOTE] Cleaned 404 for: ${this._targetUrl.split('/').pop()}`, 'log-warn');
                     try { Object.defineProperty(this, 'responseText', { value: '' }); Object.defineProperty(this, 'response', { value: '' }); } catch(e){}
                 }
             });
             origSend.apply(this, arguments);
         };
 
-        const originalFetch = window.fetch;
-        window.fetch = async function(...args) {
-            const response = await originalFetch.apply(this, args);
-            if (!response.ok && typeof args[0] === 'string' && (args[0].includes('.json') || args[0].includes('.hash'))) {
-                return new Response("", { status: 404, statusText: "Not Found" });
-            }
-            return response;
-        };
-
-        // --- 4. POKI STUBS ---
+        // --- 2. POKI STUBS ---
         window.PokiSDK = {
-            init: () => { printToScreen("[POKI] Game finally requested init()!", "log-warn"); return Promise.resolve(); },
-            gameLoadingStart: () => {}, gameLoadingFinished: () => { printToScreen("[POKI] gameLoadingFinished()", "log-warn"); },
+            init: () => Promise.resolve(),
+            gameLoadingStart: () => {}, gameLoadingFinished: () => {},
             gameplayStart: () => {}, gameplayStop: () => {},
             commercialBreak: () => Promise.resolve(false), rewardedBreak: () => Promise.resolve(true), displayAd: () => Promise.resolve()
         };
         window.initPokiBridge = () => window.PokiSDK;
 
-        // --- 5. UNITY CONFIG & BOOT ---
-        const canvas = document.querySelector("#unity-canvas");
+        // --- 3. UNITY BOOT ---
         const config = {
             dataUrl: "Build/d103a616cc0b6f5c976b00be4279887c.data",
             frameworkUrl: "Build/952596604e9ece58dd0e915d2baf70c9.js",
@@ -93,13 +105,11 @@
         const script = document.createElement("script");
         script.src = "Build/hotel-master-v2022.3.18f1-store-v1_0_3-build430.loader.js";
         script.onload = () => {
-            printToScreen("Loader loaded, booting Unity...", "log-info");
-            createUnityInstance(canvas, config, (progress) => {}).then((unityInstance) => {
+            printToScreen("Loader ready. Booting...", "log-info");
+            createUnityInstance(document.querySelector("#unity-canvas"), config, (progress) => {}).then((unityInstance) => {
                 window.unityInstance = unityInstance;
-                printToScreen("ENGINE BOOT COMPLETE. Awaiting Game Logic...", "log-info");
-            }).catch((err) => {
-                printToScreen(`FATAL ERROR: ${err}`, 'log-error');
-            });
+                printToScreen("ENGINE BOOT COMPLETE. Waiting for the freeze...", "log-info");
+            }).catch((err) => printToScreen(`FATAL: ${err}`, 'log-error'));
         };
         document.head.appendChild(script);
     </script>
