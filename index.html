@@ -2,7 +2,7 @@
 <html lang="en-us">
 <head>
     <meta charset="utf-8">
-    <title>My Perfect Hotel | Radar Sniffer</title>
+    <title>My Perfect Hotel | Defibrillator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         html, body { 
@@ -24,15 +24,28 @@
             word-wrap: break-word; z-index: 9999;
         }
         .log-error { color: #ff3333; font-weight: bold; }
-        .log-warn { color: #ffff00; font-weight: bold; } /* Yellow for hanging files */
         .log-info { color: #aaa; }
         .log-network { color: #00ccff; }
         .log-poki { color: #ff00ff; font-weight: bold; }
+
+        /* The Defibrillator Overlay */
+        #wake-up-button {
+            position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+            background: rgba(0, 197, 101, 0.8); color: white;
+            display: flex; justify-content: center; align-items: center;
+            font-family: sans-serif; font-size: 24px; font-weight: bold;
+            text-align: center; z-index: 10000; cursor: pointer;
+            animation: pulse 2s infinite; text-transform: uppercase;
+        }
+        @keyframes pulse { 0% { background: rgba(0, 197, 101, 0.8); } 50% { background: rgba(0, 150, 80, 0.9); } 100% { background: rgba(0, 197, 101, 0.8); } }
     </style>
 </head>
 <body>
     <div id="unity-container"><canvas id="unity-canvas"></canvas></div>
-    <div id="eni-console"><div>[ENI Radar v5.0] Sweeping for hanging files...</div></div>
+    
+    <div id="wake-up-button" onclick="wakeUpEngine()">TAP TO UNLOCK ENGINE</div>
+
+    <div id="eni-console"><div>[ENI Defibrillator v6.0] Awaiting vitals...</div></div>
 
     <script>
         // --- 1. TERMINAL SETUP ---
@@ -50,52 +63,24 @@
         console.error = function(...args) { origError(...args); printToScreen(args.join(' '), 'log-error'); };
         window.onerror = function(msg, src, lineno) { printToScreen(`CRASH: ${msg} @ line ${lineno}`, 'log-error'); };
 
-        // --- 2. PENDING REQUEST TRACKER ---
-        const activeRequests = new Set();
-        
-        // Check every 3 seconds for files that are stuck loading
-        setInterval(() => {
-            if (activeRequests.size > 0) {
-                printToScreen(`RADAR WARNING: Still waiting on ${activeRequests.size} file(s)...`, 'log-warn');
-                activeRequests.forEach(url => printToScreen(`  -> HANGING: ${url}`, 'log-warn'));
+        // --- 2. THE WAKE UP ROUTINE ---
+        function wakeUpEngine() {
+            document.getElementById('wake-up-button').style.display = 'none';
+            printToScreen("PHYSICAL TAP DETECTED. Audio Context Unlocked.", "log-poki");
+            // If the game is processing shaders, this tap might queue until the CPU is free
+            printToScreen("WARNING: If it is still frozen, it is compiling shaders. WAIT 60 SECONDS.", "log-error");
+        }
+
+        // --- 3. POKI BRIDGE (Callback Catcher) ---
+        window.initPokiBridge = function(...args) { 
+            printToScreen("INIT POKI BRIDGE CALLED", "log-poki"); 
+            // If they passed a secret callback function, execute it!
+            if (args.length > 0 && typeof args[0] === 'function') {
+                printToScreen("Executing hidden Poki callback!", "log-poki");
+                args[0]();
             }
-        }, 3000);
-
-        // --- 3. NETWORK WIRETAP ---
-        const originalFetch = window.fetch;
-        window.fetch = function(url, options) {
-            printToScreen(`Fetch Requested: ${url}`, 'log-network');
-            activeRequests.add(url);
-            return originalFetch.apply(this, arguments).then(res => {
-                activeRequests.delete(url);
-                if (!res.ok) printToScreen(`FETCH 404 MISSING: ${url}`, 'log-error');
-                return res;
-            }).catch(err => {
-                activeRequests.delete(url);
-                printToScreen(`FETCH FAILED (CORS/Network): ${url}`, 'log-error');
-                throw err;
-            });
+            return { success: true }; 
         };
-
-        const origOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url) {
-            printToScreen(`XHR Requested: ${url}`, 'log-network');
-            activeRequests.add(url);
-            
-            this.addEventListener('loadend', () => { activeRequests.delete(url); });
-            this.addEventListener('error', () => { 
-                activeRequests.delete(url); 
-                printToScreen(`XHR FAILED (CORS/Network): ${url}`, 'log-error'); 
-            });
-            this.addEventListener('load', () => {
-                activeRequests.delete(url);
-                if (this.status >= 400) printToScreen(`XHR ${this.status} MISSING: ${url}`, 'log-error');
-            });
-            origOpen.apply(this, arguments);
-        };
-
-        // --- 4. POKI SDK TRACKING ---
-        window.initPokiBridge = function() { printToScreen("INIT POKI BRIDGE CALLED", "log-poki"); return true; };
         const pokiHandler = {
             get: function(target, prop) {
                 return function(...args) {
@@ -105,6 +90,15 @@
             }
         };
         window.PokiSDK = new Proxy({}, pokiHandler);
+
+        // --- 4. NETWORK WIRETAP (Silent Mode) ---
+        const originalFetch = window.fetch;
+        window.fetch = function(url) {
+            if (url.includes('.bundle') || url.includes('.json') || url.includes('.hash')) {
+                printToScreen(`Fetching Asset: ${url.split('/').pop()}`, 'log-network');
+            }
+            return originalFetch.apply(this, arguments);
+        };
 
         // --- 5. UNITY CONFIG ---
         const canvas = document.querySelector("#unity-canvas");
@@ -125,10 +119,10 @@
         printToScreen("Starting Unity Loader...", "log-info");
         createUnityInstance(canvas, config, (progress) => {
             let pct = Math.round(progress * 100);
-            if (pct % 10 === 0 || pct >= 95) printToScreen(`Engine Download: ${pct}%`, 'log-info');
+            if (pct % 20 === 0 || pct >= 95) printToScreen(`Engine Download: ${pct}%`, 'log-info');
         }).then((unityInstance) => {
             window.unityInstance = unityInstance;
-            printToScreen("ENGINE BOOT COMPLETE. Handing over to Game Logic...", "log-info");
+            printToScreen("ENGINE BOOT COMPLETE. Waiting for Game Logic...", "log-info");
         }).catch((message) => {
             printToScreen(`FATAL BOOT ERROR: ${message}`, 'log-error');
         });
